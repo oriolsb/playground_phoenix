@@ -1,0 +1,21 @@
+[project]
+name = "phoenix-kit"
+version = "0.2.0"
+description = "Phoenix Kit: agent skills and a checker for the four Phoenix primitives"
+requires-python = ">=3.11"
+# The checker and the evals use only the Python standard library.
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+]
+
+[tool.uv]
+# A plugin folder, not a library: uv installs the dev tools only.
+package = false
+
+[tool.pytest.ini_options]
+# The kit's own tests. Run them from this folder: `uv run pytest`.
+testpaths = ["scripts"]
+pythonpath = ["scripts"]

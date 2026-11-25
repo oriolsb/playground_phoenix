@@ -1,0 +1,16 @@
+{
+  "name": "phoenix-kit",
+  "displayName": "Phoenix Kit",
+  "version": "0.2.0",
+  "description": "Eleven skills for the four Phoenix primitives: specify, decide, contract, evaluate, generate, deletion-test, assess, change, and three readers that explain a system, review its vocabulary, and reconstruct its history. A starting point for spec-anchored, regenerable systems.",
+  "author": {
+    "name": "Pedro Santos"
+  },
+  "license": "MIT",
+  "keywords": [
+    "phoenix-architecture",
+    "regenerative-software",
+    "spec-driven-development",
+    "deletion-test"
+  ]
+}

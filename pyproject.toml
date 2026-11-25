@@ -1,0 +1,29 @@
+[project]
+name = "ai-workshop"
+version = "0.1.0"
+description = "Workshop: build, repair, and evolve software with AI coding agents"
+# 3.15 has no pydantic-core wheel yet. uv then builds it from source and fails.
+requires-python = ">=3.11,<3.15"
+dependencies = [
+    "fastapi>=0.141.1",
+    "uvicorn>=0.53.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "hypothesis>=6",
+    "radon>=6.0.1",
+    "import-linter>=2.15",
+    "httpx2>=2.13.1",
+    "pytest-bdd>=8.1.0",
+    "pyyaml>=6.0.3",
+    "jsonschema>=4.26.0",
+    "httpx>=0.28.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = [".", "green_field/run-2"]
+# The Phoenix Kit has its own pyproject.toml and runs its own tests.
+addopts = ["--ignore=phoenix-kit"]
+markers = ["fitness: a fitness function"]

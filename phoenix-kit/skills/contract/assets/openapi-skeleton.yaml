@@ -1,0 +1,72 @@
+openapi: 3.1.0
+info:
+  title: <System name> API
+  version: 0.1.0
+  description: >-
+    The contract a caller sees. Each operation cites the rules it satisfies
+    in x-rules. The contract test validates every live response against
+    this file.
+
+paths:
+  /example:
+    post:
+      operationId: example
+      summary: <COMMAND> - <what the caller gets>
+      x-rules: [RULE-1, RULE-2]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExampleRequest"
+      responses:
+        "201":
+          description: <the observable result of RULE-1>
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExampleResponse"
+        "409":
+          description: <the error reasons that this status carries>
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  schemas:
+    ExampleRequest:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 30
+    ExampleResponse:
+      type: object
+      required: [id, message]
+      properties:
+        id:
+          type: string
+        message:
+          type: string
+    ErrorReason:
+      type: string
+      enum: [MALFORMED_REQUEST, NOT_FOUND, STATE_REFUSES, INVALID_VALUE]
+      # One reason, one status. The reason for each status is in a decision
+      # record. The contract test reads this map.
+      x-status-by-reason:
+        MALFORMED_REQUEST: 400
+        NOT_FOUND: 404
+        STATE_REFUSES: 409
+        INVALID_VALUE: 422
+    Error:
+      type: object
+      required: [reason, message]
+      properties:
+        reason:
+          $ref: "#/components/schemas/ErrorReason"
+        message:
+          type: string
