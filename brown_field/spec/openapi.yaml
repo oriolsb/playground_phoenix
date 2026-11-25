@@ -1,0 +1,661 @@
+openapi: 3.1.0
+info:
+  title: Katacombs API
+  version: 1.0.0
+  description: >-
+    The contract a caller of the game-server sees, recovered from the legacy
+    code on 2026-11-25 (brown_field/api.py, brown_field/game.py). It records
+    what the code does today. Each operation cites the rules it satisfies in
+    x-rules (brown_field/spec/specification.md). The contract test
+    (brown_field/tests/test_contract.py) validates a live response of each
+    operation against this file.
+
+tags:
+  - name: Game
+  - name: Player
+  - name: Accounts
+  - name: Chat
+  - name: Legacy
+    description: Kept for mobile client v1 (api.py:188). Do not remove.
+
+paths:
+  /game/player:
+    post:
+      operationId: startGame
+      tags: [Game]
+      summary: Start a game - the new player at BRICK LANE
+      x-rules: [PLAYER-1, PLAYER-2, PLAYER-3, PLAYER-4, PLAYER-5, API-1, API-2]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewPlayer"
+      responses:
+        "201":
+          description: PLAYER-1. The new player.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerWithEnergy"
+        "400":
+          $ref: "#/components/responses/InvalidRequestOrValue"
+        "405":
+          $ref: "#/components/responses/NotAllowed"
+    get:
+      operationId: listPlayers
+      tags: [Game]
+      summary: List the active players
+      x-rules: [PLAYER-6, WIN-1]
+      responses:
+        "200":
+          description: PLAYER-6. Every active player.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerWithEnergy"
+
+  /game/player/{playerSid}:
+    delete:
+      operationId: quitGame
+      tags: [Game]
+      summary: Quit - the player leaves, the bag stays at the location
+      x-rules: [PLAYER-7, PLAYER-8, ACCOUNT-6, PLAYER-9, API-2]
+      parameters:
+        - $ref: "#/components/parameters/PlayerSid"
+      responses:
+        "200":
+          description: PLAYER-7. The message is `Game Over`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /leaderboard:
+    get:
+      operationId: readLeaderboard
+      tags: [Game]
+      summary: The finished games since the server started, highest score first
+      x-rules: [BOARD-1, WIN-2]
+      responses:
+        "200":
+          description: BOARD-1.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FinishedGame"
+
+  /items/{itemSid}:
+    get:
+      operationId: inspectItem
+      tags: [Player]
+      summary: Inspect an item - no player needed
+      x-rules: [ITEM-1, ITEM-2, API-2]
+      parameters:
+        - $ref: "#/components/parameters/ItemSid"
+      responses:
+        "200":
+          description: ITEM-1.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /player/{playerSid}/bag:
+    get:
+      operationId: inspectBag
+      tags: [Player]
+      summary: BAG - the items, the gold, the score and the energy
+      x-rules: [BAG-1, BAG-2, GOLD-1, PLAYER-9, API-2]
+      parameters:
+        - $ref: "#/components/parameters/PlayerSid"
+      responses:
+        "200":
+          description: BAG-1.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BagWithEnergy"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /player/{playerSid}/save:
+    post:
+      operationId: saveGame
+      tags: [Player]
+      summary: Save the player's state for a restart
+      x-rules: [SAVE-1, SAVE-2, PLAYER-9, API-2]
+      parameters:
+        - $ref: "#/components/parameters/PlayerSid"
+      responses:
+        "200":
+          description: SAVE-1. The path is the server's database file.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SaveResult"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /accounts:
+    post:
+      operationId: registerAccount
+      tags: [Accounts]
+      summary: Register an account
+      x-rules: [ACCOUNT-1, ACCOUNT-2, ACCOUNT-3, PLAYER-2, PLAYER-3, PLAYER-4, API-1, API-2]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewAccount"
+      responses:
+        "201":
+          description: ACCOUNT-1.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "400":
+          $ref: "#/components/responses/InvalidRequestOrValue"
+        "405":
+          $ref: "#/components/responses/NotAllowed"
+
+  /accounts/login:
+    post:
+      operationId: login
+      tags: [Accounts]
+      summary: Log in - the account's player
+      x-rules: [ACCOUNT-4, ACCOUNT-5, ACCOUNT-6, PLAYER-5, API-1, API-2]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Credentials"
+      responses:
+        "200":
+          description: ACCOUNT-4.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerWithEnergy"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "405":
+          $ref: "#/components/responses/NotAllowed"
+
+  /player/{playerSid}/chat:
+    post:
+      operationId: sendChatMessage
+      tags: [Chat]
+      summary: Send a chat message to the player's location
+      x-rules: [CHAT-1, CHAT-3, PLAYER-9, API-1, API-2]
+      parameters:
+        - $ref: "#/components/parameters/PlayerSid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewChatMessage"
+      responses:
+        "201":
+          description: CHAT-1. The message is `SENT.`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    get:
+      operationId: readChat
+      tags: [Chat]
+      summary: The chat messages sent from the player's location, oldest first
+      x-rules: [CHAT-2, PLAYER-9, API-2]
+      parameters:
+        - $ref: "#/components/parameters/PlayerSid"
+      responses:
+        "200":
+          description: CHAT-2.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatMessage"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /player/{playerSid}/item/{itemSid}/use/{action}:
+    put:
+      operationId: actOnItem
+      tags: [Player]
+      summary: TAKE, DROP, OPEN, CLOSE or USE an item
+      x-rules:
+        - ACT-1
+        - ACT-2
+        - ACT-3
+        - ACT-4
+        - ACT-5
+        - ACT-6
+        - ACT-7
+        - ACT-8
+        - ACT-9
+        - ACT-10
+        - ACT-11
+        - ACT-12
+        - ACT-13
+        - ACT-14
+        - ACT-15
+        - ACT-16
+        - ACT-17
+        - GOLD-2
+        - BAG-3
+        - ITEM-2
+        - PLAYER-9
+        - API-1
+        - API-2
+      parameters:
+        - $ref: "#/components/parameters/PlayerSid"
+        - $ref: "#/components/parameters/ItemSid"
+        - name: action
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/Action"
+      responses:
+        "200":
+          description: >-
+            The response message of the action: `TAKEN.`, `DROPPED.`,
+            `OPENED.`, `OPENED. YOU FIND <N> GOLD.`, `CLOSED.`, a use message
+            (ACT-14, ACT-15) or `NOTHING HAPPENS.`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "405":
+          $ref: "#/components/responses/NotAllowed"
+
+  /player/{playerSid}/pickup/{itemSid}:
+    put:
+      operationId: legacyPickup
+      tags: [Legacy]
+      summary: Legacy take - no bag limit, no win check, no move count
+      x-rules: [LEGACY-1, LEGACY-2, ITEM-2, PLAYER-9, API-2]
+      parameters:
+        - $ref: "#/components/parameters/PlayerSid"
+        - $ref: "#/components/parameters/ItemSid"
+      responses:
+        "200":
+          description: LEGACY-1, LEGACY-2. The message is always `OK`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /player/{playerSid}/location:
+    get:
+      operationId: lookAround
+      tags: [Player]
+      summary: LOOK - the player's location
+      x-rules: [LOOK-1, ACT-13, PLAYER-9, API-2]
+      parameters:
+        - $ref: "#/components/parameters/PlayerSid"
+      responses:
+        "200":
+          description: LOOK-1.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Location"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /player/{playerSid}/look/{direction}:
+    get:
+      operationId: lookInDirection
+      tags: [Player]
+      summary: LOOK [direction] - the location there, without moving
+      x-rules: [LOOK-2, LOOK-3, PLAYER-9, API-1, API-2]
+      parameters:
+        - $ref: "#/components/parameters/PlayerSid"
+        - $ref: "#/components/parameters/DirectionParam"
+      responses:
+        "200":
+          description: LOOK-2.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Location"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "405":
+          $ref: "#/components/responses/NotAllowed"
+
+  /player/{playerSid}/move/{direction}:
+    put:
+      operationId: move
+      tags: [Player]
+      summary: GO - the new location
+      x-rules:
+        - MOVE-1
+        - MOVE-2
+        - MOVE-3
+        - MOVE-4
+        - MOVE-5
+        - MOVE-6
+        - MOVE-7
+        - MOVE-8
+        - GOLD-1
+        - WIN-1
+        - WIN-2
+        - WIN-3
+        - PLAYER-9
+        - API-1
+        - API-2
+      parameters:
+        - $ref: "#/components/parameters/PlayerSid"
+        - $ref: "#/components/parameters/DirectionParam"
+      responses:
+        "200":
+          description: MOVE-1. A rat note (MOVE-8) may end the description.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Location"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "405":
+          $ref: "#/components/responses/NotAllowed"
+
+components:
+  parameters:
+    PlayerSid:
+      name: playerSid
+      in: path
+      required: true
+      description: A player sid. Any text is accepted; an unknown one is PLAYER-9.
+      schema:
+        type: string
+    ItemSid:
+      name: itemSid
+      in: path
+      required: true
+      description: An item sid. Any text is accepted; an unknown one is ITEM-2.
+      schema:
+        type: string
+    DirectionParam:
+      name: direction
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Direction"
+
+  responses:
+    InvalidRequest:
+      description: "Reason INVALID_REQUEST (API-1): `INVALID REQUEST.`"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InvalidRequestOrValue:
+      description: >-
+        Reason INVALID_REQUEST (API-1), or INVALID_VALUE (PLAYER-3, PLAYER-4,
+        ACCOUNT-2).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Reason NOT_FOUND (PLAYER-9, ITEM-2, ACT-1).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotAllowed:
+      description: >-
+        Reason NOT_ALLOWED: a rule refuses the command in the present state
+        (PLAYER-5, LOOK-3, MOVE-4 to MOVE-7, BAG-3, ACT-2, ACT-3, ACT-7,
+        ACT-9, ACT-10, ACT-12, ACCOUNT-3, ACCOUNT-5).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    Sid:
+      type: string
+      pattern: "^[0-9]{6}-[0-9]{12}-[0-9]{8}$"
+    Direction:
+      type: string
+      enum: [north, south, east, west, up, down]
+    Action:
+      type: string
+      enum: [open, close, pick, drop, use]
+    Item:
+      type: object
+      required: [sid, name, description, actions, value]
+      additionalProperties: false
+      properties:
+        sid:
+          $ref: "#/components/schemas/Sid"
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Action"
+        value:
+          type: integer
+          minimum: 0
+    Location:
+      type: object
+      required: [title, description, exits, items, isExit]
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        exits:
+          type: array
+          items:
+            $ref: "#/components/schemas/Direction"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Item"
+        isExit:
+          type: boolean
+          description: True only for the katacombs exit.
+    Bag:
+      type: object
+      required: [items, gold, score]
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Item"
+        gold:
+          type: integer
+          minimum: 0
+        score:
+          type: integer
+          minimum: 0
+          description: BAG-2. Gold plus the value of each item.
+    BagWithEnergy:
+      type: object
+      required: [items, gold, score, energy]
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Item"
+        gold:
+          type: integer
+          minimum: 0
+        score:
+          type: integer
+          minimum: 0
+        energy:
+          type: integer
+          maximum: 20
+    PlayerWithEnergy:
+      type: object
+      required: [sid, name, location, bag, hasWon, energy]
+      additionalProperties: false
+      properties:
+        sid:
+          $ref: "#/components/schemas/Sid"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        location:
+          $ref: "#/components/schemas/Location"
+        bag:
+          $ref: "#/components/schemas/Bag"
+        hasWon:
+          type: boolean
+        energy:
+          type: integer
+          maximum: 20
+    FinishedGame:
+      type: object
+      required: [name, score, moves]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        score:
+          type: integer
+          minimum: 0
+        moves:
+          type: integer
+          minimum: 0
+          description: The move count of the win.
+    Account:
+      type: object
+      required: [email, name]
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+        name:
+          type: string
+    ChatMessage:
+      type: object
+      required: [name, text, at]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        text:
+          type: string
+        at:
+          type: string
+          format: date-time
+          description: UTC, to the second, for example 2026-11-25T09:45:10+00:00.
+    Message:
+      type: object
+      required: [message]
+      additionalProperties: false
+      properties:
+        message:
+          type: string
+    SaveResult:
+      type: object
+      required: [message, path]
+      additionalProperties: false
+      properties:
+        message:
+          const: GAME SAVED.
+        path:
+          type: string
+    NewPlayer:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+    NewAccount:
+      type: object
+      required: [email, password, name]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        name:
+          type: string
+    Credentials:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+    NewChatMessage:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+    ErrorReason:
+      type: string
+      description: >-
+        The kind of an error. Not sent on the wire today: the body carries
+        only the status as `code` and the message. A client tells the
+        reasons apart by the status, and INVALID_REQUEST from INVALID_VALUE
+        by the message.
+      enum: [INVALID_REQUEST, INVALID_VALUE, NOT_FOUND, NOT_ALLOWED]
+      # One reason, one status. The reason for each status goes in a
+      # decision record (work plan step 4). The contract test reads this map.
+      x-status-by-reason:
+        INVALID_REQUEST: 400
+        INVALID_VALUE: 400
+        NOT_FOUND: 404
+        NOT_ALLOWED: 405
+    Error:
+      type: object
+      required: [code, message]
+      additionalProperties: false
+      properties:
+        code:
+          type: integer
+          enum: [400, 404, 405]
+          description: The HTTP status, repeated.
+        message:
+          type: string
+          minLength: 1
+          description: >-
+            Upper case. Some messages hold a sid from the request as it was
+            sent (PLAYER-9, ITEM-2).

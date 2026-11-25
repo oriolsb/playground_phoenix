@@ -203,7 +203,9 @@ Yes. The unit mixes data movement with business rules.
 ### Progress
 
 - [x] 0. `PHOENIX.md` saved at the package root (2026-11-25)
-- [ ] 1. Freeze the boundary
+- [x] 1. Freeze the boundary (2026-11-25): 63 boundary rules, `openapi.yaml`
+      (16 operations), 2 JSON Schemas, Terms, ownership, `tests/test_contract.py`
+      (30 pass). The status-by-reason decision record is still owed (step 4).
 - [ ] 2. Capture current behavior
 - [ ] 3. Complete the specification
 - [ ] 4. Record the provenance

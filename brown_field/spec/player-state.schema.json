@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:katacombs:player-state",
+  "title": "Player state",
+  "description": "The copy of a player's state that the server writes and reads back: the `payload` column of a save (SAVE-1, SAVE-2, game.py:744-753) and the `snapshot` column of an account (ACCOUNT-6, game.py:373-383). A start of the server reads both, so a regenerated server must accept old rows of this shape. Recovered from the legacy code on 2026-11-25.",
+  "type": "object",
+  "required": ["location", "bag", "gold", "energy", "moves", "visited", "opened", "has_won"],
+  "additionalProperties": false,
+  "properties": {
+    "location": {
+      "type": "string",
+      "minLength": 1,
+      "description": "A location title. A start skips a save whose title no longer exists (SAVE-2)."
+    },
+    "bag": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/sid" },
+      "description": "The item sids in the bag, in the order they were taken."
+    },
+    "gold": { "type": "integer", "minimum": 0 },
+    "energy": {
+      "type": "integer",
+      "maximum": 20,
+      "description": "Added to the payload in 2023 (game.py:754)."
+    },
+    "moves": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "The move count. Added to the payload in 2023 (game.py:754)."
+    },
+    "visited": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true,
+      "description": "The titles of the visited locations, sorted. GOLD-1 reads it."
+    },
+    "opened": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/sid" },
+      "uniqueItems": true,
+      "description": "The sids of the items this player opened, sorted. GOLD-2 reads it."
+    },
+    "has_won": { "type": "boolean" }
+  },
+  "$defs": {
+    "sid": { "type": "string", "pattern": "^[0-9]{6}-[0-9]{12}-[0-9]{8}$" }
+  }
+}

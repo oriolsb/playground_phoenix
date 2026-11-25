@@ -6,3 +6,8 @@ __pycache__/
 .DS_Store
 .phoenix/*
 !.phoenix/assessment/
+
+# Third-party skill, installed locally
+.claude/skills/archify/
+.archify/
+skills-lock.json
