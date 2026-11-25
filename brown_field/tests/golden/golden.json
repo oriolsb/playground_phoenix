@@ -1,0 +1,37 @@
+{
+  "written_by": "brown_field/tests/golden/make_golden.py, legacy code of 2026-11-25",
+  "saver": {
+    "sid": "885617-012525237752-42285671",
+    "name": "GOLDEN SAVER",
+    "location": "OLD TRUMAN BREWERY",
+    "bag_item_names": [
+      "BEER"
+    ],
+    "gold": 5,
+    "energy": 11
+  },
+  "account": {
+    "email": "golden@example.org",
+    "password": "golden-password",
+    "name": "golden",
+    "stored_name": "GOLDEN",
+    "player_sid": "474653-268696412393-04964131",
+    "snapshot_location": "BREWERY ROOFTOP",
+    "snapshot_gold": 5,
+    "snapshot_energy": 10
+  },
+  "highscores": {
+    "lines": 2,
+    "names": [
+      "GOLDEN WINNER",
+      "GOLDEN SECOND"
+    ]
+  },
+  "old_save": {
+    "sid": "885617-012525237752-42285671",
+    "missing_keys": [
+      "energy",
+      "moves"
+    ]
+  }
+}

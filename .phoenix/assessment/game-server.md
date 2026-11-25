@@ -207,6 +207,9 @@ Yes. The unit mixes data movement with business rules.
       (16 operations), 2 JSON Schemas, Terms, ownership, `tests/test_contract.py`
       (30 pass). The status-by-reason decision record is still owed (step 4).
 - [ ] 2. Capture current behavior
+      - [x] Test setup (2026-11-25): conftest fixtures (isolated files, clock with
+        local time, rat, restart, golden), golden fixtures from the legacy code,
+        contract test moved to `tests/contract/`; 43 pass
 - [ ] 3. Complete the specification
 - [ ] 4. Record the provenance
 - [ ] 5. Deletion Test and regeneration

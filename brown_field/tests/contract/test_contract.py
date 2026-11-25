@@ -19,14 +19,11 @@ from pathlib import Path
 
 import pytest
 import yaml
-from fastapi.testclient import TestClient
 from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 from referencing.jsonschema import DRAFT202012
 
-from brown_field.api import create_app
-
-SPEC = Path(__file__).resolve().parents[1] / "spec"
+SPEC = Path(__file__).resolve().parents[2] / "spec"
 OPENAPI = yaml.safe_load((SPEC / "openapi.yaml").read_text(encoding="utf-8"))
 PLAYER_STATE = json.loads((SPEC / "player-state.schema.json").read_text(encoding="utf-8"))
 HIGHSCORE_LINE = json.loads((SPEC / "highscore-line.schema.json").read_text(encoding="utf-8"))
@@ -88,11 +85,7 @@ def _rebase(schema):
 # --- A game through the API ------------------------------------------------------
 
 
-@pytest.fixture
-def client(tmp_path, monkeypatch):
-    monkeypatch.setenv("KATACOMBS_DB", str(tmp_path / "katacombs.db"))
-    monkeypatch.setenv("KATACOMBS_HIGHSCORES", str(tmp_path / "highscores.jsonl"))
-    return TestClient(create_app())
+# The `client` fixture and the isolated files come from tests/conftest.py.
 
 
 def start(client, name="ANA") -> str:
@@ -285,29 +278,29 @@ def test_each_status_of_an_error_has_a_reason():
 # --- 3. The data that others read ------------------------------------------------
 
 
-def test_a_save_writes_a_player_state_of_the_contract(client, tmp_path):
+def test_a_save_writes_a_player_state_of_the_contract(client, isolated_files):
     sid = start(client)
     go(client, sid, "north")
     client.put(f"/player/{sid}/item/{item_here(client, sid, 'BEER')}/use/pick")
     client.post(f"/player/{sid}/save")
-    with sqlite3.connect(tmp_path / "katacombs.db") as connection:
+    with sqlite3.connect(isolated_files.db) as connection:
         (payload,) = connection.execute("SELECT payload FROM saves").fetchone()
     Draft202012Validator(PLAYER_STATE).validate(json.loads(payload))
 
 
-def test_a_quit_with_an_account_writes_a_snapshot_of_the_contract(client, tmp_path):
+def test_a_quit_with_an_account_writes_a_snapshot_of_the_contract(client, isolated_files):
     client.post("/accounts", json={"email": "ana@example.org", "password": "pw", "name": "ana"})
     sid = client.post("/accounts/login", json={"email": "ana@example.org", "password": "pw"}).json()["sid"]
     go(client, sid, "north")
     client.delete(f"/game/player/{sid}")
-    with sqlite3.connect(tmp_path / "katacombs.db") as connection:
+    with sqlite3.connect(isolated_files.db) as connection:
         (snapshot,) = connection.execute("SELECT snapshot FROM accounts").fetchone()
     Draft202012Validator(PLAYER_STATE).validate(json.loads(snapshot))
 
 
-def test_a_win_appends_a_high_score_line_of_the_contract(client, tmp_path):
+def test_a_win_appends_a_high_score_line_of_the_contract(client, isolated_files):
     go(client, start(client), *WIN_ROUTE)
-    lines = (tmp_path / "highscores.jsonl").read_text(encoding="utf-8").splitlines()
+    lines = isolated_files.highscores.read_text(encoding="utf-8").splitlines()
     assert len(lines) == 1
     Draft202012Validator(HIGHSCORE_LINE).validate(json.loads(lines[0]))
 
