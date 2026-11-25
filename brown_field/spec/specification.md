@@ -763,6 +763,19 @@ of another version must read them.
 - Observable result: `brown_field.api.app` answers `GET /leaderboard` with
   200. It reads the database file once, at the import.
 
+### Operations
+
+#### OPS-1 — Each command responds in less than 100 ms at p99
+
+- Source: the workshop (brown_field/README.md:391-393).
+- Rule: When a client sends a command, Katacombs shall respond in less
+  than 100 ms at the 99th percentile, over 100 calls, measured in process.
+- Why: players expect instant feedback.
+- Observable result: a test sends 100 commands through the REST API in
+  process, a mix of looks, the bag, moves, item actions, chat and a save,
+  and the 99th percentile of their response times (nearest rank: the 99th
+  of the 100 sorted times) is below 100 ms.
+
 ### Legacy
 
 #### LEGACY-1 — The legacy pickup takes an item without the checks

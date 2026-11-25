@@ -214,7 +214,10 @@ Yes. The unit mixes data movement with business rules.
       - [x] REST characterization: 10 feature files, 103 scenarios; `check trace`
         63/63 rules; 145 tests pass; 5 contested scenarios tagged (step 4 commit dd82f9d)
       - [x] Data at rest, configuration and entry points: 8 rules (STORE, CONF,
-        ENTRY), 2 features in `tests/boundary/`; 156 pass; trace 71/71
+        ENTRY), 2 features in `tests/boundary/`; 156 pass; trace 71/71 (step 5 commit 587c6a2)
+      - [x] OPS-1 rule and fitness scenario (`tests/fitness/`, p99 about 1.5-3 ms);
+        17 port scenarios (`tests/ports/`, XUseCase(InMemoryGame())); 174 pass;
+        trace 72/72
 - [ ] 3. Complete the specification
 - [ ] 4. Record the provenance
 - [ ] 5. Deletion Test and regeneration

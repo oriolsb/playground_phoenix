@@ -58,6 +58,7 @@ def pytest_configure(config):
         ("acceptance", "a feature of the Evaluation"),
         ("api", "the way in is the REST contract"),
         ("port", "the way in is a published port"),
+        ("ops", "an operational limit; it runs on its own with -m ops"),
     ]:
         config.addinivalue_line("markers", f"{way_in}: {meaning}")
     text = (SPEC / "specification.md").read_text(encoding="utf-8")
