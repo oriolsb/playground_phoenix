@@ -11,7 +11,7 @@ spec: brown_field/spec/specification.md
 decisions: brown_field/decisions
 decision_index: brown_field/decisions/adr-index.md
 map: brown_field/spec/evaluation/test-scenarios.md
-contracts: brown_field/spec/openapi.yaml, brown_field/spec/player-state.schema.json, brown_field/spec/highscore-line.schema.json
+contracts: brown_field/spec/openapi.yaml, brown_field/spec/player-state.schema.json, brown_field/spec/highscore-line.schema.json, brown_field/spec/world.schema.json
 tests: brown_field/tests
 code: brown_field
 test_command: uv run pytest brown_field/tests

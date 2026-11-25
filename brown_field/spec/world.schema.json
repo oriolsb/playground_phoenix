@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "world.schema.json",
+  "title": "The Katacombs world",
+  "description": "WORLD-1. The fixed world of the game: each location, each item, the slide and the exit that the manhole opens. Characterized from the legacy game; the order of each list is the order that the API shows.",
+  "type": "object",
+  "required": ["version", "start", "locations", "items", "oneWayExits", "openedExits"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "$comment": { "type": "string" },
+    "version": { "const": 1 },
+    "start": { "$ref": "#/$defs/title", "description": "PLAYER-1. The location of a new player." },
+    "locations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/location" }
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/item" }
+    },
+    "oneWayExits": {
+      "description": "WORLD-2. Exits with no way back.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "direction"],
+        "additionalProperties": false,
+        "properties": {
+          "from": { "$ref": "#/$defs/title" },
+          "direction": { "$ref": "#/$defs/direction" }
+        }
+      }
+    },
+    "openedExits": {
+      "description": "ACT-13. An exit that exists only while an item is open.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["item", "from", "direction", "to"],
+        "additionalProperties": false,
+        "properties": {
+          "item": { "$ref": "#/$defs/sid" },
+          "from": { "$ref": "#/$defs/title" },
+          "direction": { "$ref": "#/$defs/direction" },
+          "to": { "$ref": "#/$defs/title" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "title": { "type": "string", "pattern": "^[A-Z][A-Z ]*$" },
+    "sid": { "type": "string", "pattern": "^[0-9]{6}-[0-9]{12}-[0-9]{8}$" },
+    "direction": { "enum": ["north", "south", "east", "west", "up", "down"] },
+    "location": {
+      "type": "object",
+      "required": ["title", "description", "exits", "items", "gold", "isExit"],
+      "additionalProperties": false,
+      "properties": {
+        "title": { "$ref": "#/$defs/title" },
+        "description": { "type": "string", "minLength": 1 },
+        "exits": {
+          "description": "Direction to the title of the location it leads to, in the order that the API lists them.",
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/direction" },
+          "additionalProperties": { "$ref": "#/$defs/title" }
+        },
+        "items": {
+          "description": "The sids of the items that start here.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/sid" }
+        },
+        "gold": { "type": "integer", "minimum": 0, "description": "GOLD-1. Added on the first visit." },
+        "isExit": { "type": "boolean", "description": "WIN-1. True only for the katacombs exit." }
+      }
+    },
+    "item": {
+      "type": "object",
+      "required": ["sid", "name", "description", "actions", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "sid": { "$ref": "#/$defs/sid" },
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "actions": {
+          "type": "array",
+          "items": { "enum": ["open", "close", "pick", "drop", "use"] }
+        },
+        "value": { "type": "integer", "minimum": 0, "description": "MOVE-8: the rat takes only an item of value 0." },
+        "goldInside": { "type": "integer", "minimum": 1, "description": "GOLD-2. Added on the first opening by each player." },
+        "locked": { "const": true, "description": "ACT-10, ACT-14. The item starts locked." }
+      }
+    }
+  }
+}

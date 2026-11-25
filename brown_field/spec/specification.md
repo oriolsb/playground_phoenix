@@ -1,6 +1,6 @@
 > **Characterization record, 2026-11-25.** Every rule below records what the legacy code does
 > today, and a test pins it. A rule's `Status` says whether anybody decided it:
-> **49 observed** (the code does it; nobody decided it), **12 accepted** (kept on purpose; it cites its decision record), **11 contested** (in doubt; it states its open question).
+> **50 observed** (the code does it; nobody decided it), **13 accepted** (kept on purpose; it cites its decision record), **11 contested** (in doubt; it states its open question).
 > "Why: A guess:" marks a reason that nobody wrote down; it is the reader's inference.
 
 # Katacombs — Specification (game-server)
@@ -22,8 +22,9 @@ caller sees. The internal rules and the operational limits come next
 
 - "A client" is any caller of the REST API: the web client, the mobile
   client v1, or a script.
-- The world map, the items and their values are fixed data. A rule that
-  names a location or an item uses its title or name as the API shows it.
+- The world map, the items and their values are fixed data, in
+  `brown_field/spec/world.json` (WORLD-1). A rule that names a location or
+  an item uses its title or name as the API shows it.
 - Error messages are part of the contract: clients show them to players
   as they are.
 
@@ -67,6 +68,7 @@ caller sees. The internal rules and the operational limits come next
 
 | Dataset | Writer | Readers |
 | --- | --- | --- |
+| The fixed world (`brown_field/spec/world.json`): the start, each location and item, the slide | nobody at run time: the specification | game-server (start), the tests |
 | World state: items per location, open items, locked items, exits | game-server | game-server, every client through the API |
 | Player state: location, bag, gold, energy, move count, visited, opened, won | game-server | game-server, every client through the API |
 | Saves (SQLite table `saves` in the file `KATACOMBS_DB`) | game-server (save) | game-server (start) |
@@ -172,6 +174,44 @@ assessment); that is an internal finding, not a boundary one.
 - Why: the player quit, never existed, or was lost in a restart without a save.
 - Observable result: status 404, error reason `NOT_FOUND`, message
   `PLAYER <sid> NOT FOUND.`
+
+### The world
+
+#### WORLD-1 — The game is played in the world of world.json
+
+- Status: observed. The code does it; nobody has decided it (2026-11-25).
+- Source: legacy code (game.py:34-69, game.py:135-301, game.py:408-412);
+  characterized into `brown_field/spec/world.json`, with its schema
+  `brown_field/spec/world.schema.json`.
+- Rule: Katacombs shall start each game in the world that
+  `brown_field/spec/world.json` describes: each location with its title,
+  description, exits, items and gold, and each item with its sid, name,
+  description, actions, value, gold inside and lock.
+- Why: the world is the content of the game. Saves, the golden files, the
+  high-score file and the mobile client v1 refer to its titles and its item
+  sids, so a changed world breaks them.
+- Observable result: a look around in each location shows the title,
+  description, exits (in this order) and items of `world.json`; a look in
+  each direction shows the location that `exits` names; the first visit
+  adds the location's `gold`; `GET /items/{sid}` answers the item of
+  `world.json` for each sid.
+
+#### WORLD-2 — Each exit has a way back, except the slide from the cellar
+
+- Status: accepted. Kept on purpose; see decision 0009.
+- Source: legacy code (game.py:50-52, game.py:297-299, game.py:304-313,
+  game.py:417), "Product asked for a slide from the cellar into the
+  tunnels (2022)".
+- Rule: Katacombs shall give each exit of a location a way back in the
+  opposite direction, except each exit in `oneWayExits` of `world.json`:
+  the slide `down` from BREWERY CELLAR.
+- Why: Product asked for the slide in 2022. The way back keeps a player
+  from being trapped. At start, the code refuses a world with a repeated
+  title or a missing way back.
+- Observable result: from BREWERY CELLAR, `down` leads to OLD TUBE TUNNEL,
+  and `up` from OLD TUBE TUNNEL leads to RAILWAY ARCHES, not to the cellar.
+  For every other exit, a look in the opposite direction from the target
+  shows the location the player came from.
 
 ### Looking
 

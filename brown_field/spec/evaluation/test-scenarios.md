@@ -33,6 +33,8 @@ Do not type this line by hand. After the review, a person runs
 | PLAYER-7 | A player who quits is gone | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/players.feature` |
 | PLAYER-8 | A login after a quit restores the snapshot (+1 more) | api | durable | `rest/accounts.feature`, `rest/players.feature` |
 | PLAYER-9 | A player who quits is gone (+1 more) | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/players.feature` |
+| WORLD-1 | The world file is valid; each location, each look, each first-visit gold, each item, each gold inside and lock match `world.json` | api | durable | `world/world.feature` |
+| WORLD-2 | The slide from the cellar has no way back; every other exit has one | api | durable | `world/world.feature` |
 | LOOK-1 | Looking around shows the start location | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/moving.feature` |
 | LOOK-2 | Looking through an exit shows the next location without moving | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/moving.feature` |
 | LOOK-3 | Looking where there is no exit is refused | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/moving.feature` |

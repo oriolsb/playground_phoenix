@@ -15,3 +15,4 @@ yet: each one keeps its open question on its rule.
 | [0006](0006-the-client-hides-the-leaderboard.md) | The web client hides the leaderboard until the season starts | written after the code | `WEB-BOARD-1` | None |
 | [0007](0007-the-workshop-limits.md) | The limits and checks that the workshop sets | accepted | `OPS-1`, `WEB-OPS-1`, `WEB-E2E-1` | None |
 | [0008](0008-the-seams-that-the-tests-use.md) | The seams that the tests use become part of the boundary | accepted | `ENTRY-1`, `ENTRY-2`, `MOVE-6`, `MOVE-8` | None |
+| [0009](0009-the-slide-from-the-cellar-goes-one-way.md) | The slide from the cellar goes one way | written after the code | `WORLD-2`, `WORLD-1`, `WEB-E2E-1` | None |

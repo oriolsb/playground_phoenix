@@ -1,0 +1,373 @@
+{
+  "$schema": "./world.schema.json",
+  "$comment": "Characterized from the legacy game on 2026-11-25 (game.py:50-301, 410-412). The order of each list is the order the API shows.",
+  "version": 1,
+  "start": "BRICK LANE",
+  "locations": [
+    {
+      "title": "BRICK LANE",
+      "description": "YOU ARE STANDING AT THE END OF BRICK LANE BEFORE A SMALL BRICK BUILDING CALLED THE OLD TRUMAN BREWERY. AROUND YOU IS A FOREST OF RESTAURANTS. A SMALL STREAM OF CRAFTED BEER FLOWS OUT OF THE BUILDING AND DOWN A GULLY.",
+      "exits": {
+        "north": "OLD TRUMAN BREWERY",
+        "east": "SPITALFIELDS MARKET",
+        "west": "BRICK LANE BAKERY",
+        "south": "BOXPARK"
+      },
+      "items": [],
+      "gold": 0,
+      "isExit": false
+    },
+    {
+      "title": "OLD TRUMAN BREWERY",
+      "description": "YOU ARE INSIDE THE OLD BREWERY. COPPER VATS LINE THE WALLS. A STAIRCASE GOES UP TO THE ROOF AND A TRAPDOOR GOES DOWN TO THE CELLAR.",
+      "exits": {
+        "south": "BRICK LANE",
+        "up": "BREWERY ROOFTOP",
+        "down": "BREWERY CELLAR"
+      },
+      "items": [
+        "000100-000000000000-00000001",
+        "000100-000000000000-00000007"
+      ],
+      "gold": 5,
+      "isExit": false
+    },
+    {
+      "title": "BREWERY CELLAR",
+      "description": "A COLD CELLAR FULL OF EMPTY BARRELS. SOMETHING SHINES ON THE FLOOR. IN A CORNER, A METAL SLIDE GOES DOWN INTO THE DARK.",
+      "exits": {
+        "up": "OLD TRUMAN BREWERY",
+        "down": "OLD TUBE TUNNEL"
+      },
+      "items": [
+        "000100-000000000000-00000003"
+      ],
+      "gold": 20,
+      "isExit": false
+    },
+    {
+      "title": "BREWERY ROOFTOP",
+      "description": "YOU ARE ON THE ROOF OF THE BREWERY. YOU CAN SEE ALL OF SHOREDITCH.",
+      "exits": {
+        "down": "OLD TRUMAN BREWERY"
+      },
+      "items": [
+        "000100-000000000000-00000002"
+      ],
+      "gold": 0,
+      "isExit": false
+    },
+    {
+      "title": "SPITALFIELDS MARKET",
+      "description": "THE OLD SPITALFIELDS MARKET. THE STALLS ARE CLOSED FOR THE NIGHT.",
+      "exits": {
+        "west": "BRICK LANE",
+        "south": "BACK YARD"
+      },
+      "items": [
+        "000100-000000000000-00000004"
+      ],
+      "gold": 0,
+      "isExit": false
+    },
+    {
+      "title": "BACK YARD",
+      "description": "A SMALL YARD BEHIND THE MARKET. THERE IS A MANHOLE COVER IN THE GROUND.",
+      "exits": {
+        "north": "SPITALFIELDS MARKET"
+      },
+      "items": [
+        "000100-000000000000-00000005"
+      ],
+      "gold": 0,
+      "isExit": false
+    },
+    {
+      "title": "BRICK LANE BAKERY",
+      "description": "A SMALL BAKERY THAT NEVER CLOSES. THE SHELVES ARE FULL OF BREAD.",
+      "exits": {
+        "east": "BRICK LANE",
+        "north": "COLUMBIA ROAD"
+      },
+      "items": [
+        "000100-000000000000-00000008",
+        "000100-000000000000-00000009",
+        "000100-000000000000-00000010",
+        "000100-000000000000-00000011"
+      ],
+      "gold": 0,
+      "isExit": false
+    },
+    {
+      "title": "COLUMBIA ROAD",
+      "description": "THE COLUMBIA ROAD FLOWER MARKET. SOMEBODY LEFT SOME FLOWERS AND A FEW COINS.",
+      "exits": {
+        "south": "BRICK LANE BAKERY"
+      },
+      "items": [
+        "000100-000000000000-00000012"
+      ],
+      "gold": 10,
+      "isExit": false
+    },
+    {
+      "title": "BOXPARK",
+      "description": "SHIPPING CONTAINERS FULL OF SHOPS. MOST OF THEM ARE EMPTY.",
+      "exits": {
+        "north": "BRICK LANE",
+        "east": "RAILWAY ARCHES"
+      },
+      "items": [
+        "000100-000000000000-00000013"
+      ],
+      "gold": 5,
+      "isExit": false
+    },
+    {
+      "title": "RAILWAY ARCHES",
+      "description": "OLD RAILWAY ARCHES. A RUSTY LADDER GOES DOWN INTO A TUNNEL.",
+      "exits": {
+        "west": "BOXPARK",
+        "down": "OLD TUBE TUNNEL"
+      },
+      "items": [
+        "000100-000000000000-00000014"
+      ],
+      "gold": 0,
+      "isExit": false
+    },
+    {
+      "title": "OLD TUBE TUNNEL",
+      "description": "AN OLD TUBE TUNNEL. NO TRAIN HAS COME HERE FOR FIFTY YEARS. A LADDER GOES UP.",
+      "exits": {
+        "up": "RAILWAY ARCHES",
+        "east": "TUNNEL JUNCTION"
+      },
+      "items": [
+        "000100-000000000000-00000015"
+      ],
+      "gold": 0,
+      "isExit": false
+    },
+    {
+      "title": "TUNNEL JUNCTION",
+      "description": "A TUNNEL JUNCTION. OLD SIGNS POINT IN ALL DIRECTIONS.",
+      "exits": {
+        "west": "OLD TUBE TUNNEL",
+        "north": "KATACOMBS"
+      },
+      "items": [
+        "000100-000000000000-00000016"
+      ],
+      "gold": 0,
+      "isExit": false
+    },
+    {
+      "title": "KATACOMBS",
+      "description": "DAMP STONE TUNNELS. SKULLS LINE THE WALLS. A FAINT LIGHT GLOWS TO THE EAST.",
+      "exits": {
+        "east": "KATACOMBS EXIT",
+        "south": "TUNNEL JUNCTION"
+      },
+      "items": [
+        "000100-000000000000-00000006"
+      ],
+      "gold": 30,
+      "isExit": false
+    },
+    {
+      "title": "KATACOMBS EXIT",
+      "description": "DAYLIGHT! YOU HAVE FOUND THE WAY OUT OF THE KATACOMBS.",
+      "exits": {
+        "west": "KATACOMBS"
+      },
+      "items": [],
+      "gold": 0,
+      "isExit": true
+    }
+  ],
+  "items": [
+    {
+      "sid": "000100-000000000000-00000001",
+      "name": "BEER",
+      "description": "A BOTTLE OF CRAFTED BEER FROM THE BREWERY.",
+      "actions": [
+        "pick",
+        "drop",
+        "use"
+      ],
+      "value": 0
+    },
+    {
+      "sid": "000100-000000000000-00000007",
+      "name": "BEER",
+      "description": "A BOTTLE OF CRAFTED BEER FROM THE BREWERY.",
+      "actions": [
+        "pick",
+        "drop",
+        "use"
+      ],
+      "value": 0
+    },
+    {
+      "sid": "000100-000000000000-00000002",
+      "name": "KEY",
+      "description": "A SMALL IRON KEY. IT HAS A PICTURE OF A MANHOLE ON IT.",
+      "actions": [
+        "pick",
+        "drop",
+        "use"
+      ],
+      "value": 0
+    },
+    {
+      "sid": "000100-000000000000-00000003",
+      "name": "RING",
+      "description": "A SILVER RING. SOMEBODY LOST IT A LONG TIME AGO.",
+      "actions": [
+        "pick",
+        "drop"
+      ],
+      "value": 20
+    },
+    {
+      "sid": "000100-000000000000-00000004",
+      "name": "CRATE",
+      "description": "A HEAVY WOODEN CRATE WITH A LOOSE LID.",
+      "actions": [
+        "open",
+        "close"
+      ],
+      "value": 0,
+      "goldInside": 10
+    },
+    {
+      "sid": "000100-000000000000-00000005",
+      "name": "MANHOLE",
+      "description": "A ROUND IRON MANHOLE COVER WITH A KEYHOLE.",
+      "actions": [
+        "open",
+        "close"
+      ],
+      "value": 0,
+      "locked": true
+    },
+    {
+      "sid": "000100-000000000000-00000006",
+      "name": "GOBLET",
+      "description": "A GOLDEN GOBLET. IT LOOKS VERY VALUABLE.",
+      "actions": [
+        "pick",
+        "drop"
+      ],
+      "value": 50
+    },
+    {
+      "sid": "000100-000000000000-00000008",
+      "name": "BREAD",
+      "description": "A WARM LOAF OF BREAD. IT SMELLS GOOD.",
+      "actions": [
+        "pick",
+        "drop",
+        "use"
+      ],
+      "value": 0
+    },
+    {
+      "sid": "000100-000000000000-00000009",
+      "name": "BREAD",
+      "description": "A WARM LOAF OF BREAD. IT SMELLS GOOD.",
+      "actions": [
+        "pick",
+        "drop",
+        "use"
+      ],
+      "value": 0
+    },
+    {
+      "sid": "000100-000000000000-00000010",
+      "name": "BREAD",
+      "description": "A WARM LOAF OF BREAD. IT SMELLS GOOD.",
+      "actions": [
+        "pick",
+        "drop",
+        "use"
+      ],
+      "value": 0
+    },
+    {
+      "sid": "000100-000000000000-00000011",
+      "name": "UMBRELLA",
+      "description": "A BLACK UMBRELLA WITH A BROKEN RIB.",
+      "actions": [
+        "pick",
+        "drop"
+      ],
+      "value": 0
+    },
+    {
+      "sid": "000100-000000000000-00000012",
+      "name": "FLOWERS",
+      "description": "A BUNCH OF SUNFLOWERS.",
+      "actions": [
+        "pick",
+        "drop"
+      ],
+      "value": 0
+    },
+    {
+      "sid": "000100-000000000000-00000013",
+      "name": "CANDLE",
+      "description": "A HALF-BURNT CANDLE.",
+      "actions": [
+        "pick",
+        "drop"
+      ],
+      "value": 0
+    },
+    {
+      "sid": "000100-000000000000-00000014",
+      "name": "MAP",
+      "description": "AN OLD MAP OF THE TUBE. SOME LINES ARE CROSSED OUT.",
+      "actions": [
+        "pick",
+        "drop"
+      ],
+      "value": 0
+    },
+    {
+      "sid": "000100-000000000000-00000015",
+      "name": "ROPE",
+      "description": "TEN METRES OF STRONG ROPE.",
+      "actions": [
+        "pick",
+        "drop"
+      ],
+      "value": 0
+    },
+    {
+      "sid": "000100-000000000000-00000016",
+      "name": "SKULL",
+      "description": "A SMALL SKULL. IT GRINS AT YOU.",
+      "actions": [
+        "pick",
+        "drop"
+      ],
+      "value": 5
+    }
+  ],
+  "oneWayExits": [
+    {
+      "from": "BREWERY CELLAR",
+      "direction": "down"
+    }
+  ],
+  "openedExits": [
+    {
+      "item": "000100-000000000000-00000005",
+      "from": "BACK YARD",
+      "direction": "down",
+      "to": "KATACOMBS"
+    }
+  ]
+}
