@@ -420,7 +420,7 @@ assessment); that is an internal finding, not a boundary one.
 
 #### ACT-10 — Opening a locked item is refused
 
-- Source: legacy code (game.py:411, game.py:697-698).
+- Source: legacy code (game.py:412, game.py:697-698).
 - Rule: If a player opens an item that is locked, then Katacombs shall
   refuse the action.
 - Why: the MANHOLE starts locked; the KEY unlocks it (ACT-14).
