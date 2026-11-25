@@ -8,7 +8,6 @@ import json
 
 import pytest
 
-from brown_field.api import create_app
 
 # The win route that needs no market and no cellar.
 WIN_ROUTE = ["south", "east", "down", "east", "north", "east"]
@@ -120,14 +119,3 @@ def test_a_win_appends_to_the_legacy_high_score_file(golden, game, isolated_file
     assert after[: len(before)] == before
     assert len(after) == len(before) + 1
     assert json.loads(after[-1])["name"] == "NEW WINNER"
-
-
-@pytest.mark.contested
-def test_a_save_from_before_2023_stops_the_server_from_starting(golden_old_save):
-    """SAVE-2, contested: a payload without `energy` raises at start.
-
-    Today the server does not start at all (game.py:470). Pinned as it is;
-    a decision record must confirm or change it.
-    """
-    with pytest.raises(KeyError, match="energy"):
-        create_app()

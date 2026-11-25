@@ -210,6 +210,9 @@ Yes. The unit mixes data movement with business rules.
       - [x] Test setup (2026-11-25): conftest fixtures (isolated files, clock with
         local time, rat, restart, golden), golden fixtures from the legacy code,
         contract test moved to `tests/contract/`; 43 pass
+      - [x] End-to-end test through the market (step 3 commit 0183970)
+      - [x] REST characterization: 10 feature files, 103 scenarios; `check trace`
+        63/63 rules; 145 tests pass; 5 contested scenarios tagged
 - [ ] 3. Complete the specification
 - [ ] 4. Record the provenance
 - [ ] 5. Deletion Test and regeneration

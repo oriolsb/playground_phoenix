@@ -25,68 +25,68 @@ Do not type this line by hand. After the review, a person runs
 | Rule | Scenario | Way in | Tier | Feature file |
 | --- | --- | --- | --- | --- |
 | PLAYER-1 | A new player wins on the route through the market | api | durable | `rest/win.feature` |
-| PLAYER-2 | No scenario yet (A name is trimmed and upper case) | - | - | - |
-| PLAYER-3 | No scenario yet (A name has 1 to 50 characters) | - | - | - |
-| PLAYER-4 | No scenario yet (The name ADMIN is reserved) | - | - | - |
-| PLAYER-5 | No scenario yet (At most 20 players are active) | - | - | - |
-| PLAYER-6 | No scenario yet (A client can list the active players) | - | - | - |
-| PLAYER-7 | No scenario yet (Quitting removes the player) | - | - | - |
-| PLAYER-8 | No scenario yet (A quitting player leaves the bag behind) | - | - | - |
-| PLAYER-9 | No scenario yet (An unknown player sid is not found) | - | - | - |
-| LOOK-1 | No scenario yet (A player can look around) | - | - | - |
-| LOOK-2 | No scenario yet (A player can look in a direction without moving) | - | - | - |
-| LOOK-3 | No scenario yet (Looking where there is no exit is refused) | - | - | - |
+| PLAYER-2 | A client registers an account (+1 more) | api | durable | `rest/accounts.feature`, `rest/players.feature` |
+| PLAYER-3 | The email check comes before the name check (+4 more) | api | durable | `rest/accounts.feature`, `rest/players.feature` |
+| PLAYER-4 | An account name follows the player name rules: "<name>" (+1 more) | api | durable | `rest/accounts.feature`, `rest/players.feature` |
+| PLAYER-5 | A login without an active player is refused when the game is full (+1 more) | api | durable | `rest/accounts.feature`, `rest/players.feature` |
+| PLAYER-6 | The list of players shows every active player with energy | api | durable | `rest/players.feature` |
+| PLAYER-7 | A player who quits is gone | api | durable | `rest/players.feature` |
+| PLAYER-8 | A login after a quit restores the snapshot (+1 more) | api | durable | `rest/accounts.feature`, `rest/players.feature` |
+| PLAYER-9 | A player who quits is gone (+1 more) | api | durable | `rest/players.feature` |
+| LOOK-1 | Looking around shows the start location | api | durable | `rest/moving.feature` |
+| LOOK-2 | Looking through an exit shows the next location without moving | api | durable | `rest/moving.feature` |
+| LOOK-3 | Looking where there is no exit is refused | api | durable | `rest/moving.feature` |
 | MOVE-1 | A new player wins on the route through the market | api | durable | `rest/win.feature` |
 | MOVE-2 | A new player wins on the route through the market | api | durable | `rest/win.feature` |
-| MOVE-3 | A new player wins on the route through the market | api | durable | `rest/win.feature` |
-| MOVE-4 | No scenario yet (Moving where there is no exit is refused) | - | - | - |
-| MOVE-5 | No scenario yet (A player with no energy can't move) | - | - | - |
-| MOVE-6 | A new player wins on the route through the market | api | durable | `rest/win.feature` |
+| MOVE-3 | Each chat message adds one to the move count (+1 more) | api | durable | `rest/chat.feature`, `rest/win.feature` |
+| MOVE-4 | Moving where there is no exit is refused and costs nothing | api | durable | `rest/moving.feature` |
+| MOVE-5 | A player with no energy can't move (+1 more) | api | durable | `rest/moving.feature` |
+| MOVE-6 | At minute <minute> the market is <state> (+1 more) | api | durable | `rest/moving.feature`, `rest/win.feature` |
 | MOVE-7 | A new player wins on the route through the market | api | durable | `rest/win.feature` |
-| MOVE-8 | No scenario yet (A rat in the cellar can steal an item without value) | - | - | - |
-| GOLD-1 | A new player wins on the route through the market | api | durable | `rest/win.feature` |
-| GOLD-2 | A new player wins on the route through the market | api | durable | `rest/win.feature` |
-| BAG-1 | No scenario yet (A player can inspect the bag) | - | - | - |
-| BAG-2 | A new player wins on the route through the market | api | durable | `rest/win.feature` |
-| BAG-3 | No scenario yet (The bag holds 8 slots of up to 3 items with the same name) | - | - | - |
-| ITEM-1 | No scenario yet (A client can inspect an item) | - | - | - |
-| ITEM-2 | No scenario yet (An unknown item sid is not found) | - | - | - |
-| ACT-1 | No scenario yet (An item must be here or in the bag) | - | - | - |
-| ACT-2 | No scenario yet (An item allows only its own actions) | - | - | - |
-| ACT-3 | No scenario yet (A player who has won can't act on items) | - | - | - |
-| ACT-4 | A new player wins on the route through the market | api | durable | `rest/win.feature` |
-| ACT-5 | No scenario yet (Taking an item already in the bag succeeds again) | - | - | - |
-| ACT-6 | No scenario yet (Dropping moves an item into the location) | - | - | - |
-| ACT-7 | No scenario yet (A player can only drop or use an item in the bag) | - | - | - |
-| ACT-8 | No scenario yet (Opening an item opens it for everyone) | - | - | - |
-| ACT-9 | No scenario yet (Opening an open item is refused) | - | - | - |
-| ACT-10 | A new player wins on the route through the market | api | durable | `rest/win.feature` |
-| ACT-11 | No scenario yet (Closing an item closes it for everyone) | - | - | - |
-| ACT-12 | No scenario yet (Closing a closed item is refused) | - | - | - |
-| ACT-13 | A new player wins on the route through the market | api | durable | `rest/win.feature` |
-| ACT-14 | A new player wins on the route through the market | api | durable | `rest/win.feature` |
-| ACT-15 | No scenario yet (Bread and beer restore energy) | - | - | - |
-| ACT-16 | No scenario yet (Using any other item does nothing) | - | - | - |
+| MOVE-8 | The rat in the cellar takes an item without value to the tube tunnel (+2 more) | api | durable | `rest/moving.feature` |
+| GOLD-1 | Looking through an exit shows the next location without moving (+2 more) | api | durable | `rest/moving.feature`, `rest/win.feature` |
+| GOLD-2 | The crate is open or closed for every player, and its gold is paid once per player (+2 more) | api | durable | `rest/items.feature`, `rest/save.feature`, `rest/win.feature` |
+| BAG-1 | The bag shows the items, the gold, the score and the energy | api | durable | `rest/items.feature` |
+| BAG-2 | The highest score comes first, and equal scores keep the order of the wins (+1 more) | api | durable | `rest/leaderboard.feature`, `rest/win.feature` |
+| BAG-3 | A bag of 8 slots, 3 items with the same name per slot, refuses a ninth slot | api | durable | `rest/items.feature` |
+| ITEM-1 | A client can inspect an item without a player | api | durable | `rest/items.feature` |
+| ITEM-2 | An unknown item sid is not found (+2 more) | api | durable | `rest/items.feature`, `rest/legacy.feature` |
+| ACT-1 | An item that is neither here nor in the bag can't be reached | api | durable | `rest/items.feature` |
+| ACT-2 | An item refuses an action it does not allow: <action> the <item> (+2 more) | api | durable | `rest/items.feature` |
+| ACT-3 | The unknown item check comes before the win check (+1 more) | api | durable | `rest/items.feature` |
+| ACT-4 | A taken item moves into the bag, and a dropped one into the location (+1 more) | api | durable | `rest/items.feature`, `rest/win.feature` |
+| ACT-5 | Taking an item already in the bag answers TAKEN again and changes nothing | api | durable | `rest/items.feature` |
+| ACT-6 | A taken item moves into the bag, and a dropped one into the location | api | durable | `rest/items.feature` |
+| ACT-7 | A player can't drop an item that is here but not in the bag (+1 more) | api | durable | `rest/items.feature` |
+| ACT-8 | The crate is open or closed for every player, and its gold is paid once per player | api | durable | `rest/items.feature` |
+| ACT-9 | The crate is open or closed for every player, and its gold is paid once per player | api | durable | `rest/items.feature` |
+| ACT-10 | The key unlocks the manhole, and the open manhole adds the way down (+1 more) | api | durable | `rest/items.feature`, `rest/win.feature` |
+| ACT-11 | The crate is open or closed for every player, and its gold is paid once per player | api | durable | `rest/items.feature` |
+| ACT-12 | The crate is open or closed for every player, and its gold is paid once per player (+1 more) | api | durable | `rest/items.feature` |
+| ACT-13 | The key unlocks the manhole, and the open manhole adds the way down (+2 more) | api | durable | `rest/items.feature`, `rest/win.feature` |
+| ACT-14 | The key unlocks the manhole, and the open manhole adds the way down (+1 more) | api | durable | `rest/items.feature`, `rest/win.feature` |
+| ACT-15 | Bread restores 5 energy, up to 20, and is eaten (+1 more) | api | durable | `rest/items.feature` |
+| ACT-16 | The key outside the back yard does nothing | api | durable | `rest/items.feature` |
 | ACT-17 | A new player wins on the route through the market | api | durable | `rest/win.feature` |
 | WIN-1 | A new player wins on the route through the market | api | durable | `rest/win.feature` |
-| WIN-2 | A new player wins on the route through the market | api | durable | `rest/win.feature` |
+| WIN-2 | The highest score comes first, and equal scores keep the order of the wins (+2 more) | api | durable | `rest/leaderboard.feature`, `rest/win.feature` |
 | WIN-3 | A new player wins on the route through the market | api | durable | `rest/win.feature` |
-| BOARD-1 | No scenario yet (The leaderboard ranks the highest score first) | - | - | - |
-| SAVE-1 | No scenario yet (A player can save the game) | - | - | - |
-| SAVE-2 | No scenario yet (A restart brings saved players back, but not the world) | - | - | - |
-| ACCOUNT-1 | No scenario yet (A client can register an account) | - | - | - |
-| ACCOUNT-2 | No scenario yet (An email needs an @) | - | - | - |
-| ACCOUNT-3 | No scenario yet (An email has one account) | - | - | - |
-| ACCOUNT-4 | No scenario yet (Logging in gives the account's player) | - | - | - |
-| ACCOUNT-5 | No scenario yet (A wrong email or password is refused) | - | - | - |
-| ACCOUNT-6 | No scenario yet (Quitting with an account keeps a snapshot) | - | - | - |
-| CHAT-1 | No scenario yet (A player can send a chat message) | - | - | - |
-| CHAT-2 | No scenario yet (A player reads the chat messages of the location) | - | - | - |
-| CHAT-3 | No scenario yet (A chat message adds one to the move count) | - | - | - |
-| API-1 | No scenario yet (A malformed request is refused) | - | - | - |
-| API-2 | No scenario yet (Every error has a status and a message) | - | - | - |
-| LEGACY-1 | No scenario yet (The legacy pickup takes an item without the checks) | - | - | - |
-| LEGACY-2 | No scenario yet (The legacy pickup of an item elsewhere changes nothing) | - | - | - |
+| BOARD-1 | The highest score comes first, and equal scores keep the order of the wins | api | durable | `rest/leaderboard.feature` |
+| SAVE-1 | A save answers with the path of the database file | api | durable | `rest/save.feature` |
+| SAVE-2 | A saved player comes back after a restart with the same state (+6 more) | api | durable | `rest/save.feature` |
+| ACCOUNT-1 | A client registers an account (+1 more) | api | durable | `rest/accounts.feature` |
+| ACCOUNT-2 | An email without @ is refused (+1 more) | api | durable | `rest/accounts.feature` |
+| ACCOUNT-3 | An email has one account | api | durable | `rest/accounts.feature` |
+| ACCOUNT-4 | The first login gives a new player at BRICK LANE (+4 more) | api | durable | `rest/accounts.feature` |
+| ACCOUNT-5 | A wrong <case> is refused with one message | api | durable | `rest/accounts.feature` |
+| ACCOUNT-6 | A login after a quit restores the snapshot (+1 more) | api | durable | `rest/accounts.feature` |
+| CHAT-1 | A player sends a chat message (+1 more) | api | durable | `rest/chat.feature` |
+| CHAT-2 | The players at the location read its messages, oldest first (+1 more) | api | durable | `rest/chat.feature` |
+| CHAT-3 | Each chat message adds one to the move count | api | durable | `rest/chat.feature` |
+| API-1 | A malformed request is refused: <case> | api | durable | `rest/errors.feature` |
+| API-2 | A malformed request is refused: <case> (+1 more) | api | durable | `rest/errors.feature` |
+| LEGACY-1 | A bag of 8 slots, 3 items with the same name per slot, refuses a ninth slot (+1 more) | api | durable | `rest/items.feature`, `rest/legacy.feature` |
+| LEGACY-2 | The legacy pickup of an item elsewhere answers OK and changes nothing | api | durable | `rest/legacy.feature` |
 
 ## Checks outside the feature files
 
@@ -95,13 +95,22 @@ These pytest tests are not scenarios, so `check trace` does not count them.
 | Test | What it checks | Rules it reaches |
 | --- | --- | --- |
 | `contract/test_contract.py` | Every live response, error status and written file matches the contract | all operations in `openapi.yaml` |
-| `harness/test_fixtures.py` | Each fixture reaches the game; the golden files load | MOVE-6, MOVE-8, SAVE-1, SAVE-2, ACCOUNT-4, ACCOUNT-5, ACCOUNT-6, WIN-3 |
+| `harness/test_fixtures.py` | Each fixture reaches the game; the golden files written by the legacy code load | MOVE-6, MOVE-8, SAVE-1, SAVE-2, ACCOUNT-4, ACCOUNT-5, ACCOUNT-6, WIN-3 |
 
 ## Contested behaviors pinned as they are
 
-| Test | Behavior | Rule |
-| --- | --- | --- |
-| `harness/test_fixtures.py::test_a_save_from_before_2023_stops_the_server_from_starting` | A save without `energy` stops the server from starting | SAVE-2 |
+Tagged `@contested` (`uv run pytest brown_field/tests -m contested`). Each
+one records today's behavior; a decision record must confirm or change it.
+
+| Scenario | Rules |
+| --- | --- |
+| `rest/accounts.feature`: A second login after a quit rolls the active player back to the snapshot | ACCOUNT-4, ACCOUNT-6 |
+| `rest/chat.feature`: An empty chat message is accepted | CHAT-1 |
+| `rest/errors.feature`: A URL that is not a route answers with the framework's body | API-2 |
+| `rest/save.feature`: A restart puts a saved item back in its location too | SAVE-2 |
+| `rest/save.feature`: A save from before 2023 stops the server from starting | SAVE-2 |
+| `rest/legacy.feature` and `rest/items.feature`: the legacy pickup skips the bag limit and the move count | LEGACY-1 |
+| `rest/save.feature`: the save answer holds the server's file path | SAVE-1 |
 
 ## Rules with a partial check
 
@@ -109,6 +118,9 @@ These pytest tests are not scenarios, so `check trace` does not count them.
 | --- | --- | --- |
 | MOVE-6 | The market rule in production | The clock is faked in process; the real server's local time zone is not tested |
 | WIN-3 | That the marketing job can still read the file | The job is outside this repository; only the line format is checked |
+| MOVE-8 | The 1 in 5 chance | The rat is forced or stopped; the rate itself is not measured |
+| LEGACY-1 | The skipped win check | No item can be at the katacombs exit for a player who has won |
+| BAG-3 | A fourth item of the same name in one slot | The world holds at most 3 items with one name (BREAD) |
 
 ## Ephemeral tests that the audit found
 
