@@ -29,10 +29,10 @@ itself (`spec/specification.md`, `web/spec/specification.md`).
 | 4 | game.py:19 | The name ADMIN is reserved | Stop a player from posing as the staff | a guess | unknown | PLAYER-4 |
 | 5 | game.py:20-21, 71 | Energy: 12 at the start, 20 at most; BREAD +5, BEER +3 | A cost for moving. Not in the brief. | a guess | unknown | MOVE-2, ACT-15 |
 | 6 | game.py:22, 646-654 | A 1-in-5 rat in the cellar takes an item with value 0 to the tube tunnel | A flavour event that never lowers the score | a guess | unknown | MOVE-8 |
-| 7 | game.py:50-52 | The cellar slide goes down only: an exception to the way-back rule | "Product asked for a slide from the cellar into the tunnels (2022)" | sure | known | (no rule yet: a world rule) |
+| 7 | game.py:50-52 | The cellar slide goes down only: an exception to the way-back rule | "Product asked for a slide from the cellar into the tunnels (2022)" | sure | known | WORLD-2, decision 0009 (step 7) |
 | 8 | game.py:154, 173, 183 | Item values: RING 20, GOBLET 50, SKULL 5 | The treasures of the brief | sure | known | BAG-2 |
-| 9 | game.py:215, 223, 254, 261, 288 | Location gold: 5, 20, 10, 5, 30 | "Gold on the first visit" of the brief; the amounts are not in it | a guess | unknown | GOLD-1 |
-| 10 | game.py:299-313 | The start fails on a repeated title or a connection with no way back | A world-integrity check at boot | sure | known | (no rule yet: a world rule) |
+| 9 | game.py:215, 223, 254, 261, 288 | Location gold: 5, 20, 10, 5, 30 | "Gold on the first visit" of the brief; the amounts are not in it | a guess | unknown | GOLD-1; the amounts only in WORLD-1 (`world.json`, step 7) |
+| 10 | game.py:299-313 | The start fails on a repeated title or a connection with no way back | A world-integrity check at boot | sure | known | WORLD-2, decision 0009 (step 7) |
 | 11 | game.py:316-319 | The market is closed in minutes 50 to 59 of each hour, local time | "Cleaning crew contract (2023)… Ask facilities before you change this." | sure | known | MOVE-6 |
 | 12 | game.py:326-335 | Each win appends `{name, score, at}` to the high-score file | "The marketing leaderboard reads this file every night. Keep the format." | sure | known | WIN-3, CONF-2 |
 | 13 | game.py:348-350 | `KATACOMBS_DB`, else `katacombs.db` in the working directory | "The support laptop sets KATACOMBS_DB. Nobody else does." | sure | known | CONF-1 |
@@ -99,8 +99,11 @@ reach. That is weaker than it sounds: the same agent read the code and
 wrote the tests, so a misreading could pass in both. The group's marking
 and the regeneration of step 7 are the independent checks.
 
-Two items have no rule yet (7 and 10, the world rules). Stretch item 7 of
-step 5, the world check, would add them.
+Items 7 and 10 had no rule until step 7, when the first regeneration
+stopped for want of the world: they are now WORLD-2 and decision 0009.
+Item 9 named GOLD-1, but GOLD-1 did not hold the amounts; they are now in
+`world.json` (WORLD-1). A rule ID in the last column is not proof that the
+rule holds the knowledge.
 
 ## Deletion Test, part 1: the two lists
 
