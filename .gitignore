@@ -4,4 +4,5 @@ __pycache__/
 .pytest_cache/
 .hypothesis/
 .DS_Store
-.phoenix/
+.phoenix/*
+!.phoenix/assessment/
