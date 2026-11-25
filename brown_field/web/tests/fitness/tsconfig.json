@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": { "noEmit": true, "noUnusedLocals": false },
+  "include": ["contract-types.check.ts", "generated/openapi.d.ts", "../../src/api.ts"]
+}

@@ -217,7 +217,10 @@ Yes. The unit mixes data movement with business rules.
         ENTRY), 2 features in `tests/boundary/`; 156 pass; trace 71/71 (step 5 commit 587c6a2)
       - [x] OPS-1 rule and fitness scenario (`tests/fitness/`, p99 about 1.5-3 ms);
         17 port scenarios (`tests/ports/`, XUseCase(InMemoryGame())); 174 pass;
-        trace 72/72
+        trace 72/72 (step 6 commit 477daa6)
+      - [x] Web client (item 8): 28 WEB rules in `brown_field/web/spec/`; Vitest
+        component tests with MSW (mocks checked against the contract), type-drift
+        and bundle-size fitness, Playwright win; 52 Vitest + 2 Playwright pass
 - [ ] 3. Complete the specification
 - [ ] 4. Record the provenance
 - [ ] 5. Deletion Test and regeneration
