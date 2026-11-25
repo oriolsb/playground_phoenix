@@ -1,4 +1,7 @@
-"""Step definitions shared by the REST feature files.
+"""Step definitions shared by every feature file.
+
+Loaded as a pytest plugin by tests/conftest.py, so the features of every
+folder (rest/, boundary/) reach the same steps.
 
 Each step reaches the game through the REST API only, plus the two files a
 client of the boundary can see: the SQLite file and the high-score file. A

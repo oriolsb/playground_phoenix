@@ -54,6 +54,8 @@ caller sees. The internal rules and the operational limits come next
 | Snapshot | A copy of a player's state, written into the account when the player quits. | save (for this idea) |
 | Chat message | A text one player sends to the players at the same location. | message (alone), chat post |
 | Response message | The `message` text of a command's response or of an error. | chat (for this idea) |
+| Database file | The SQLite file that holds the saves and the accounts: `KATACOMBS_DB`, else `katacombs.db`. | database (alone), DB |
+| High-score file | The file of high-score lines: `KATACOMBS_HIGHSCORES`, else `highscores.jsonl`. | scores file |
 | Error reason | The kind of an error: `INVALID_REQUEST`, `INVALID_VALUE`, `NOT_FOUND`, `NOT_ALLOWED`. Each has one HTTP status. Not sent on the wire today. | error type, error code |
 
 ## Data ownership
@@ -662,6 +664,104 @@ assessment); that is an internal finding, not a boundary one.
   the status is the one of the error reason (see `x-status-by-reason` in
   `openapi.yaml`). A URL that is not a route answers with the framework's
   `{"detail": ...}` instead.
+
+### Data at rest, configuration and start
+
+These rules hold a boundary with stored data and with the people who run
+the server. Real saves and accounts live in the database file; a server
+of another version must read them.
+
+#### STORE-1 — The database file holds a saves table with fixed columns
+
+- Source: legacy code (game.py:338-345, game.py:757-768).
+- Rule: When a player saves, Katacombs shall write one row per player to
+  the table `saves` of the database file, with the text columns
+  `player_sid`, `name`, `payload` and `saved_at`.
+- Why: a start of the server reads this table back (SAVE-2), so its shape
+  is a contract with every save already written.
+- Observable result: the table has those four columns. The row of a saved
+  player holds the player sid, the name, a payload that matches
+  `player-state.schema.json`, and the time in UTC to the second, for
+  example `2026-11-25T11:11:46+00:00`. A second save replaces the row.
+
+#### STORE-2 — The database file holds an accounts table with fixed columns
+
+- Source: legacy code (game.py:353-361, game.py:386-403).
+- Rule: When a client registers, logs in or quits with an account,
+  Katacombs shall keep one row per account in the table `accounts` of the
+  database file, with the text columns `email`, `password_hash`, `name`,
+  `player_sid` and `snapshot`.
+- Why: accounts must survive a restart and a new version of the server.
+- Observable result: the table has those five columns. After the
+  registration, `player_sid` and `snapshot` are empty; after the first
+  login `player_sid` holds the player sid; after a quit `snapshot` holds a
+  payload that matches `player-state.schema.json`.
+
+#### STORE-3 — A password is stored as an unsalted SHA-256 digest
+
+- Source: legacy code (game.py:368-370, "TODO: bcrypt (2023)").
+- Rule: When a client registers an account, Katacombs shall store the
+  password as the lower-case hex SHA-256 digest of its UTF-8 bytes, with
+  no salt.
+- Why: unknown; the TODO says a stronger hash was planned. Every stored
+  account depends on this format: a server that hashes in another way can
+  no longer log them in.
+- Observable result: the password `golden-password` is stored as
+  `f1b580fcec5d45d1ad840f4e3409d1c5ed1fa6fe8dae3ad0e70e923c67f131dd`. Two
+  accounts with one password store the same value.
+
+#### CONF-1 — The database file is KATACOMBS_DB, else katacombs.db
+
+- Source: legacy code (game.py:348-350, "The support laptop sets KATACOMBS_DB. Nobody else does.").
+- Rule: Where the environment variable `KATACOMBS_DB` is set, Katacombs
+  shall use its value as the path of the database file, and otherwise the
+  path `katacombs.db` in the working directory.
+- Why: the support laptop moves the file; everywhere else the default holds.
+- Observable result: with the variable unset, a save creates `katacombs.db`
+  in the working directory and the save answer names the path
+  `katacombs.db`.
+
+#### CONF-2 — The high-score file is KATACOMBS_HIGHSCORES, else highscores.jsonl
+
+- Source: legacy code (game.py:328).
+- Rule: Where the environment variable `KATACOMBS_HIGHSCORES` is set,
+  Katacombs shall append the high-score lines to the file it names, and
+  otherwise to `highscores.jsonl` in the working directory.
+- Why: the marketing job reads the file from a known place.
+- Observable result: with the variable unset, a win creates
+  `highscores.jsonl` in the working directory.
+
+#### CONF-3 — The server listens on 127.0.0.1, port 8000
+
+- Source: legacy code (__main__.py:6); web client (vite.config.ts:6).
+- Rule: When a person runs `python -m brown_field`, Katacombs shall serve
+  the REST API on the address 127.0.0.1, port 8000.
+- Why: the web client's development proxy sends every `/api` request to
+  that address.
+- Observable result: while the process runs, `GET
+  http://127.0.0.1:8000/leaderboard` answers 200. The server answers only
+  on the local machine.
+
+#### ENTRY-1 — create_app serves the game it is given
+
+- Source: legacy code (api.py:101-102).
+- Rule: When code calls `create_app` with a game, Katacombs shall serve
+  that game, and when it calls `create_app` with no game, Katacombs shall
+  serve a new game that reads the files at its start.
+- Why: tests and tools start a server on a game they hold; the README of
+  the exercise names it an enabling point.
+- Observable result: two servers made from one game list the same players.
+  Two servers made with no game do not share players.
+
+#### ENTRY-2 — The module brown_field.api holds a ready server named app
+
+- Source: legacy code (api.py:220, __main__.py:6).
+- Rule: Katacombs shall offer a ready server as `app` in the module
+  `brown_field.api`, made when the module is first imported.
+- Why: `python -m brown_field` and any ASGI server start it by the name
+  `brown_field.api:app`.
+- Observable result: `brown_field.api.app` answers `GET /leaderboard` with
+  200. It reads the database file once, at the import.
 
 ### Legacy
 

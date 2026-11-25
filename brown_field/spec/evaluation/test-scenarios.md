@@ -85,6 +85,14 @@ Do not type this line by hand. After the review, a person runs
 | CHAT-3 | Each chat message adds one to the move count | api | durable | `rest/chat.feature` |
 | API-1 | A malformed request is refused: <case> | api | durable | `rest/errors.feature` |
 | API-2 | A malformed request is refused: <case> (+1 more) | api | durable | `rest/errors.feature` |
+| STORE-1 | A save writes one row to the saves table (+1 more) | - | durable | `boundary/storage.feature` |
+| STORE-2 | An account row fills in as the account is used | - | durable | `boundary/storage.feature` |
+| STORE-3 | A password is stored as its unsalted SHA-256 digest | - | durable | `boundary/storage.feature` |
+| CONF-1 | Without KATACOMBS_DB, the database file is katacombs.db in the working directory (+1 more) | - | durable | `boundary/startup.feature` |
+| CONF-2 | Without KATACOMBS_HIGHSCORES, a win writes highscores.jsonl in the working directory | - | durable | `boundary/startup.feature` |
+| CONF-3 | python -m brown_field serves the API on 127.0.0.1, port 8000 | - | durable | `boundary/startup.feature` |
+| ENTRY-1 | Two servers made from one game share its players (+1 more) | - | durable | `boundary/startup.feature` |
+| ENTRY-2 | The module brown_field.api holds a ready server (+1 more) | - | durable | `boundary/startup.feature` |
 | LEGACY-1 | A bag of 8 slots, 3 items with the same name per slot, refuses a ninth slot (+1 more) | api | durable | `rest/items.feature`, `rest/legacy.feature` |
 | LEGACY-2 | The legacy pickup of an item elsewhere answers OK and changes nothing | api | durable | `rest/legacy.feature` |
 
@@ -120,6 +128,8 @@ one records today's behavior; a decision record must confirm or change it.
 | WIN-3 | That the marketing job can still read the file | The job is outside this repository; only the line format is checked |
 | MOVE-8 | The 1 in 5 chance | The rat is forced or stopped; the rate itself is not measured |
 | LEGACY-1 | The skipped win check | No item can be at the katacombs exit for a player who has won |
+| CONF-3 | The address when port 8000 is taken | The scenario skips itself when another process, such as a development server, holds the port |
+| STORE-3 | That the digest can log in after a restart | The golden account in `harness/test_fixtures.py` checks it on the legacy file |
 | BAG-3 | A fourth item of the same name in one slot | The world holds at most 3 items with one name (BREAD) |
 
 ## Ephemeral tests that the audit found

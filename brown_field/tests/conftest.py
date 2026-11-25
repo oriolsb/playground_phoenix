@@ -30,6 +30,9 @@ from referencing.jsonschema import DRAFT202012
 from brown_field.api import create_app
 from brown_field.tests.driver import Game
 
+# The shared Given/When/Then steps of the feature files.
+pytest_plugins = ["brown_field.tests.steps"]
+
 TESTS = Path(__file__).resolve().parent
 SPEC = TESTS.parent / "spec"
 GOLDEN = TESTS / "golden"

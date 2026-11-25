@@ -212,7 +212,9 @@ Yes. The unit mixes data movement with business rules.
         contract test moved to `tests/contract/`; 43 pass
       - [x] End-to-end test through the market (step 3 commit 0183970)
       - [x] REST characterization: 10 feature files, 103 scenarios; `check trace`
-        63/63 rules; 145 tests pass; 5 contested scenarios tagged
+        63/63 rules; 145 tests pass; 5 contested scenarios tagged (step 4 commit dd82f9d)
+      - [x] Data at rest, configuration and entry points: 8 rules (STORE, CONF,
+        ENTRY), 2 features in `tests/boundary/`; 156 pass; trace 71/71
 - [ ] 3. Complete the specification
 - [ ] 4. Record the provenance
 - [ ] 5. Deletion Test and regeneration
