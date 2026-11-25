@@ -103,6 +103,15 @@ Do not type this line by hand. After the review, a person runs
 | --- | --- | --- | --- |
 | OPS-1 | 100 mixed commands in process, p99 below 100 ms (measured today: about 1.5 to 3 ms) | `uv run pytest brown_field/tests -m ops` | Instant feedback for players. Live tier: production monitoring must check the same limit against real traffic. |
 
+The status of every rule (observed, accepted, contested) is on the rule in
+the specification. `fitness/test_spec_status.py` checks that each rule a
+`@contested` scenario pins is contested, and that each accepted rule cites
+a decision record that traces to it.
+
+| Fitness | What it checks | How to run it |
+| --- | --- | --- |
+| `fitness/test_spec_status.py` | Each rule has one status; accepted cites its record; contested asks its question; the banners count right | `uv run pytest brown_field/tests -m fitness` |
+
 ## The port tier
 
 `ports/ports.feature` builds each use case as `XUseCase(InMemoryGame())`
@@ -132,7 +141,6 @@ one records today's behavior; a decision record must confirm or change it.
 | `rest/errors.feature`: A URL that is not a route answers with the framework's body | API-2 |
 | `rest/save.feature`: A restart puts a saved item back in its location too | SAVE-2 |
 | `rest/save.feature`: A save from before 2023 stops the server from starting | SAVE-2 |
-| `rest/legacy.feature` and `rest/items.feature`: the legacy pickup skips the bag limit and the move count | LEGACY-1 |
 | `rest/save.feature`: the save answer holds the server's file path | SAVE-1 |
 | `ports/ports.feature`: The move port has no energy gate | MOVE-5 |
 

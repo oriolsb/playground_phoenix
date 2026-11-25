@@ -40,4 +40,8 @@ What steps 4 and 5 added, for the step 7 grading:
 - **Context Boundary:** `openapi.yaml` (16 operations), two JSON Schemas,
   Terms with words to avoid, a data-ownership table, and a contract test;
   the mock bodies of the client are checked against the contract.
-- **Provenance:** still no decision record (step 6).
+- **Provenance (step 6):** 8 decision records in `brown_field/decisions/`
+  (6 "written after the code" from comments and incidents, 2 "accepted"
+  during the exercise: the workshop limits and the seams). Each rule has a
+  status: server 49 observed, 12 accepted, 11 contested; client 12
+  observed, 7 accepted, 9 contested. 28 reasons are marked as guesses.

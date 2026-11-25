@@ -221,8 +221,9 @@ Yes. The unit mixes data movement with business rules.
       - [x] Web client (item 8): 28 WEB rules in `brown_field/web/spec/`; Vitest
         component tests with MSW (mocks checked against the contract), type-drift
         and bundle-size fitness, Playwright win; 52 Vitest + 2 Playwright pass
-- [ ] 3. Complete the specification
-- [ ] 4. Record the provenance
+- [x] 3. Complete the specification (README step 6, 2026-11-25): a status on
+      each of 100 rules, 28 guessed reasons marked, `fitness/test_spec_status.py`
+- [x] 4. Record the provenance: 8 decision records, `check decisions` passes
 - [ ] 5. Deletion Test and regeneration
 
 **First command:** save `.phoenix/proposal/PHOENIX.md` at the package root,
