@@ -84,12 +84,33 @@ def a_new_player(play, name):
 
 
 @given(parsers.parse("{count:d} players are in the game"))
+@when(parsers.parse("{count:d} players are in the game"))
 def players_in_the_game(play, count):
     for number in range(1, count + 1):
         play.players[f"P{number}"] = play.game.start(f"P{number}")
 
 
+@pytest.fixture
+def time_zone(monkeypatch):
+    """Set the process time zone for one test (`TZ` and `time.tzset`), and restore it."""
+    import time
+
+    def set_zone(name: str) -> None:
+        monkeypatch.setenv("TZ", name)
+        time.tzset()
+
+    yield set_zone
+    monkeypatch.undo()
+    time.tzset()
+
+
+@given(parsers.parse('the server\'s time zone is "{zone}"'))
+def the_servers_time_zone(time_zone, zone):
+    time_zone(zone)
+
+
 @given(parsers.parse("the clock shows minute {minute:d}"))
+@when(parsers.parse("the clock shows minute {minute:d}"))
 def the_clock_shows(clock, minute):
     clock.set_minute(minute)
 
@@ -102,6 +123,11 @@ def the_rat_always_runs(rat):
 @given("the rat never runs")
 def the_rat_never_runs(rat):
     rat.never()
+
+
+@given(parsers.parse("the rat draws {value:f}"))
+def the_rat_draws(rat, value):
+    rat.at(value)
 
 
 @given(parsers.parse('a scout has seen the "{item}" at the end of the path "{path}"'))
@@ -262,6 +288,14 @@ def the_saved_location_is_changed(play, isolated_files, name, title):
         connection.execute("UPDATE saves SET payload = ? WHERE player_sid = ?", (json.dumps(data), sid))
 
 
+
+@when(parsers.re(r'the snapshot location of "(?P<email>[^"]+)" is changed to "(?P<title>[^"]+)" in the database'))
+def the_snapshot_location_is_changed(isolated_files, email, title):
+    with sqlite3.connect(isolated_files.db) as connection:
+        (snapshot,) = connection.execute("SELECT snapshot FROM accounts WHERE email = ?", (email,)).fetchone()
+        data = {**json.loads(snapshot), "location": title}
+        connection.execute("UPDATE accounts SET snapshot = ? WHERE email = ?", (json.dumps(data), email))
+
 # --- Then: the answer ---------------------------------------------------------------
 
 
@@ -416,6 +450,12 @@ def the_list_holds(play, players, energy):
     assert play.response.status_code == 200, play.response.text
     listed = {p["name"]: p["energy"] for p in play.response.json()}
     assert listed == {player: energy for player in names(players)}
+
+
+@then(parsers.parse('the list names "{players}" in this order'))
+def the_list_names_in_order(play, players):
+    assert play.response.status_code == 200, play.response.text
+    assert [p["name"] for p in play.response.json()] == names(players)
 
 
 @then("the player has won")

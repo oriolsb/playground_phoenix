@@ -167,6 +167,10 @@ class Rat:
     def never(self) -> None:
         self._monkeypatch.setattr(random, "random", lambda: 0.99)
 
+    def at(self, value: float) -> None:
+        """The draw that decides the rat: below 0.2 it runs (MOVE-8, 1 in 5)."""
+        self._monkeypatch.setattr(random, "random", lambda: value)
+
 
 @pytest.fixture
 def rat(monkeypatch) -> Rat:

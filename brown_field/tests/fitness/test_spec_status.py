@@ -25,6 +25,17 @@ STATUS = re.compile(r"^- Status: (observed|accepted|contested)\b(.*)$", re.M)
 pytestmark = pytest.mark.fitness
 
 
+@pytest.fixture(autouse=True, scope="module")
+def the_inputs_exist():
+    """Name a missing input folder: a copy of the primitives must hold all three."""
+    for needed in (*SPECS, DECISIONS):
+        assert needed.exists(), (
+            f"{needed.relative_to(ROOT.parent)} is missing: this check reads both "
+            "specifications and the decision records; copy brown_field/web/spec/ "
+            "and brown_field/decisions/ with the tests"
+        )
+
+
 def rules(spec: Path) -> dict[str, str]:
     return {m.group(1): m.group(2) for m in RULE.finditer(spec.read_text(encoding="utf-8"))}
 

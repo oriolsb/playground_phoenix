@@ -11,3 +11,9 @@ __pycache__/
 .claude/skills/archify/
 .archify/
 skills-lock.json
+
+# mutmut's working copy
+mutants/
+
+# Coverage data
+.coverage

@@ -31,6 +31,18 @@ Feature: The database file keeps its shape for every saved player and account
     When the player quits
     Then the account row of "ana@example.org" has a snapshot at "BRICK LANE"
 
+  @STORE-2 @ACCOUNT-6
+  Scenario: A quit writes the snapshot to the account of that player only
+    # game.py:442-446 finds the account by its player sid, among all accounts.
+    When a client registers "ana@example.org" with the password "pw" and the name "ana"
+    And a client registers "bo@example.org" with the password "pw" and the name "bo"
+    And a client logs in as "bo@example.org" with the password "pw"
+    And "BO" goes north
+    And a client logs in as "ana@example.org" with the password "pw"
+    And "BO" quits
+    Then the account row of "ana@example.org" names the player and has no snapshot
+    And the account row of "bo@example.org" has a snapshot at "OLD TRUMAN BREWERY"
+
   @STORE-3
   Scenario: A password is stored as its unsalted SHA-256 digest
     When a client registers "ana@example.org" with the password "golden-password" and the name "ana"

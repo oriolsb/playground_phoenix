@@ -21,13 +21,31 @@ dev = [
     "jsonschema>=4.26.0",
     "httpx>=0.28.1",
     "time-machine>=3.6.0",
+    "pytest-cov>=7.1.0",
+    "mutmut>=3.8.1",
 ]
 
 [tool.pytest.ini_options]
 pythonpath = [".", "green_field/run-2"]
 # The Phoenix Kit has its own pyproject.toml and runs its own tests.
 addopts = ["--ignore=phoenix-kit"]
+# A bare `uv run pytest` runs the suite. Without this, pytest collects from the
+# root, and refuses `pytest_plugins` in brown_field/tests/conftest.py.
+testpaths = ["brown_field/tests"]
 markers = [
     "fitness: a fitness function",
     "contested: pins a behavior of today that a decision record must confirm or change",
+]
+
+# Mutation testing (decision 0010): `uv run mutmut run`, then `uv run mutmut results`.
+# The hand-written mutants: brown_field/tests/fitness/mutation/run_mutants.py.
+[tool.mutmut]
+source_paths = ["brown_field/game.py", "brown_field/api.py"]
+also_copy = ["brown_field/"]
+pytest_add_cli_args = [
+    "-p", "no:warnings", "-x",
+    # A subprocess runs outside mutmut's trampolines; the hand-written mutants cover it.
+    "--ignore=brown_field/tests/boundary/test_startup.py",
+    # Random sequences make the timing of each mutant vary.
+    "--ignore=brown_field/tests/fitness/test_invariants.py",
 ]

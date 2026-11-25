@@ -166,6 +166,25 @@ Feature: Players take, drop, open, close and use items
     Then the request is refused with status 405 and the message "YOU CAN'T GO THAT WAY."
 
   @api @ACT-13
+  Scenario: Through the open manhole, the way up from the katacombs leads back to the back yard
+    Given the clock shows minute 10
+    And a new player named "ana"
+    When the player goes north
+    And the player goes up
+    And the player takes the "KEY"
+    And the player goes down
+    And the player goes south
+    And the player goes east
+    And the player goes south
+    And the player uses the "KEY"
+    And the player opens the "MANHOLE"
+    And the player goes down
+    Then the player is at "KATACOMBS"
+    And the exits are "east, south, up"
+    When the player goes up
+    Then the player is at "BACK YARD"
+
+  @api @ACT-13
   Scenario: The open manhole adds the way down for every player
     Given the clock shows minute 10
     And a new player named "ana"

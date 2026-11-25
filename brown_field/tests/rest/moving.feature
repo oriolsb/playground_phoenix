@@ -87,6 +87,21 @@ Feature: Players look and move through the exits
       | 50     | closed | 405    |
       | 59     | closed | 405    |
 
+  @api @MOVE-6
+  Scenario Outline: The market reads the server's local minute, in a zone half an hour off UTC: <zone> minute <minute>
+    # In Asia/Kolkata (UTC+5:30), local minute 50 is UTC minute 20. A server
+    # that read UTC minutes would open the market at local minute 50.
+    Given the server's time zone is "<zone>"
+    And the clock shows minute <minute>
+    When the player goes east
+    Then the response status is <status>
+
+    Examples:
+      | zone            | minute | status |
+      | Asia/Kolkata    | 20     | 200    |
+      | Asia/Kolkata    | 50     | 405    |
+      | America/St_Johns | 50    | 405    |
+
   @api @MOVE-8
   Scenario: The rat in the cellar takes an item without value to the tube tunnel
     Given the rat always runs
@@ -109,6 +124,38 @@ Feature: Players look and move through the exits
     And the player goes down
     Then the description does not mention "RAT"
     And the bag holds "RING"
+
+  @api @MOVE-8
+  Scenario Outline: The rat runs when the draw is below 0.2, a chance of 1 in 5: draw <draw>
+    Given the rat draws <draw>
+    When the player goes north
+    And the player takes the "BEER"
+    And the player goes down
+    Then the bag holds "<bag>"
+
+    Examples:
+      | draw | bag  |
+      | 0.0  |      |
+      | 0.19 |      |
+      | 0.2  | BEER |
+      | 0.99 | BEER |
+
+  @api @MOVE-8
+  Scenario: The rat takes only an item of value 0: the SKULL, of value 5, is safe
+    Given the rat always runs
+    When the player goes south
+    And the player goes east
+    And the player goes down
+    And the player goes east
+    And the player takes the "SKULL"
+    And the player goes west
+    And the player goes up
+    And the player goes west
+    And the player goes north
+    And the player goes north
+    And the player goes down
+    Then the description does not mention "RAT"
+    And the bag holds "SKULL"
 
   @api @MOVE-8
   Scenario: Without the rat, the cellar takes nothing

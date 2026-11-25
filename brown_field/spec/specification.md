@@ -95,7 +95,8 @@ assessment); that is an internal finding, not a boundary one.
 - Why: each game has its own player, and every game starts at the same location.
 - Observable result: status 201. A Player with a new player sid,
   `location.title` `BRICK LANE`, an empty bag with gold 0, `hasWon` false,
-  and energy 12.
+  and energy 12. The new sid is unique: it is the sid of no active player
+  and of no item (game.py:480-488).
 
 #### PLAYER-2 — A name is trimmed and upper case
 
@@ -651,7 +652,8 @@ assessment); that is an internal finding, not a boundary one.
   items in the locations, start fresh.
 - Observable result: after a restart, the saved player sid works and shows
   the saved state. A save that names a location that no longer exists is
-  skipped.
+  skipped. The saved players come back in the order of their `saved_at`,
+  so `GET /game/player` lists them in the order they saved (game.py:458).
 
 ### Accounts
 
@@ -672,7 +674,8 @@ assessment); that is an internal finding, not a boundary one.
   shall refuse the registration.
 - Why: A guess: a minimal check that the email is an email.
 - Observable result: status 400, error reason `INVALID_VALUE`, message
-  `THE EMAIL IS NOT VALID.` This check comes before the name checks.
+  `THE EMAIL IS NOT VALID.` This check comes before the name checks. It is
+  the only check of the email: `ana@example@org` registers.
 
 #### ACCOUNT-3 — An email has one account
 
@@ -692,7 +695,12 @@ assessment); that is an internal finding, not a boundary one.
   Katacombs shall respond with the account's player: the snapshot of its
   last quit, else its active player, else a new player at BRICK LANE.
 - Why: a person resumes their game from any client.
-- Observable result: status 200, a Player with its energy.
+- Observable result: status 200, a Player with its energy. A snapshot
+  whose location is not in the world is not restored: the login gives the
+  active player, else a new player at BRICK LANE (game.py:805). A login
+  that restores a snapshot while 20 players are active, and the account's
+  player is not one of them, is refused with status 405 and the message
+  `THE KATACOMBS ARE FULL. TRY AGAIN LATER.` (game.py:808-809).
 
 #### ACCOUNT-5 — A wrong email or password is refused
 

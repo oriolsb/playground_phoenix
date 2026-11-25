@@ -62,6 +62,62 @@ Feature: A save survives a restart of the server
     And the bag shows gold 10 and energy 11
 
   @api @SAVE-2
+  Scenario: After a restart, the saved players are listed in the order they saved
+    # game.py:458 loads the saves ORDER BY saved_at; the time has seconds only.
+    Given a new player named "ana"
+    And a new player named "bo"
+    And a new player named "cy"
+    And a new player named "dee"
+    When the clock shows minute 10
+    And "DEE" saves the game
+    And the clock shows minute 11
+    And "BO" saves the game
+    And the clock shows minute 12
+    And "CY" saves the game
+    And the clock shows minute 13
+    And "ANA" saves the game
+    And the server restarts
+    And a client lists the players
+    Then the list names "DEE, BO, CY, ANA" in this order
+
+  @api @SAVE-2
+  Scenario: A save at a lost location is skipped, and the saves after it still load
+    Given a new player named "ana"
+    And a new player named "bo"
+    When the clock shows minute 10
+    And "ANA" saves the game
+    And the clock shows minute 11
+    And "BO" saves the game
+    And the saved location of "ANA" is changed to "NOWHERE" in the database
+    And the server restarts
+    And a client lists the players
+    Then the list names "BO" in this order
+
+  @api @SAVE-2 @WIN-2
+  Scenario: A restored save keeps the visited locations and the move count
+    Given the clock shows minute 10
+    And a new player named "ana"
+    When the player goes north
+    And the player saves the game
+    And the server restarts
+    And the player goes south
+    And the player goes north
+    Then the bag shows gold 5 and energy 9
+    When the player goes south
+    And the player has won through the tunnels
+    Then the leaderboard shows "ANA" with score 40 and 10 moves
+
+  @api @SAVE-2 @MOVE-7
+  Scenario: A restored save keeps the win
+    Given a new player named "ana"
+    When the player has won through the tunnels
+    And the player saves the game
+    And the server restarts
+    Then the player has won
+    When the player goes west
+    Then the request is refused with status 405 and the message "THE GAME IS OVER. YOU ALREADY FOUND THE EXIT."
+
+  @api @SAVE-2
   Scenario: A save whose location no longer exists is skipped at the start
     Given a new player named "ana"
     When the player saves the game
