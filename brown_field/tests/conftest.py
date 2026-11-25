@@ -14,6 +14,7 @@ the game's modules.
 import datetime
 import json
 import random
+import re
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -37,6 +38,27 @@ OPENAPI_URI = "urn:katacombs:openapi"
 REGISTRY = Registry().with_resource(
     OPENAPI_URI, Resource.from_contents(OPENAPI, default_specification=DRAFT202012)
 )
+
+
+# --- Markers for the feature tags --------------------------------------------------
+
+
+def pytest_configure(config):
+    """Register the tags of the feature files as pytest markers.
+
+    pytest-bdd turns each tag (`@WIN-1`, `@api`) into a mark. A rule-ID tag is
+    registered from the specification, so a tag that names no rule still
+    fails under --strict-markers.
+    """
+    for way_in, meaning in [
+        ("acceptance", "a feature of the Evaluation"),
+        ("api", "the way in is the REST contract"),
+        ("port", "the way in is a published port"),
+    ]:
+        config.addinivalue_line("markers", f"{way_in}: {meaning}")
+    text = (SPEC / "specification.md").read_text(encoding="utf-8")
+    for rule_id, title in re.findall(r"^#{3,4} ([A-Z]+-\d+) — (.+)$", text, flags=re.MULTILINE):
+        config.addinivalue_line("markers", f"{rule_id}: {title}")
 
 
 # --- Isolated files ---------------------------------------------------------------
