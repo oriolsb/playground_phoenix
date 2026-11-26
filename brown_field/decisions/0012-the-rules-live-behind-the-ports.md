@@ -101,8 +101,7 @@ neither: `brown_field.game` keeps every name of 0008, and
   another order than the code builds it today, the transcripts break in
   ways that are hard to read. We run them after each step, not only at
   the end.
-- **Depends on 0011.** If the group keeps the gate in the route, this
-  record drops `MOVE-5` and `ENTRY-4` gets one named exception.
+- **Builds on 0011**, accepted on 2026-11-26.
 
 ## Fitness functions
 

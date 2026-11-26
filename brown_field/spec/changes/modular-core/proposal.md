@@ -46,8 +46,8 @@ is an adapter.
 
 - **The energy gate moves into `MoveUseCase`** (`MOVE-5`), as decision
   0011 proposes: at energy 0, first check. The REST route maps the
-  `NotAllowed` to 405 as for every other refusal. This change depends on
-  0011 being accepted.
+  `NotAllowed` to 405 as for every other refusal. 0011 is accepted
+  (2026-11-26).
 - **Four new use cases** for the commands that only exist as routes
   today: `SendMessageUseCase`, `ReadMessagesUseCase`,
   `LeaderboardUseCase`, `LegacyPickupUseCase` (`ENTRY-3`). Their
