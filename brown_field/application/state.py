@@ -11,27 +11,19 @@ from collections import Counter
 from dataclasses import dataclass, field
 from datetime import timezone
 
-from ..domain.constants import (
-    CRATE,
-    ITEMS_PER_SLOT,
-    MANHOLE,
-    ONE_WAY,
-    OPPOSITE,
-    START_ENERGY,
-)
+from ..domain.constants import ITEMS_PER_SLOT, OPPOSITE, START_ENERGY
+from ..domain.world import Place, check_world
 from ..domain.errors import ItemNotFound, PlayerNotFound
 from ..kata import Bag, Direction, Item, Location, Player
-from .ports_out import AccountStore, Clock, HighScoreSink, RandomSource, SaveStore, StoredAccount
-
-
-@dataclass
-class Place:
-    title: str
-    description: str
-    exits: dict[Direction, str]
-    items: list[str]
-    gold: int = 0
-    is_exit: bool = False
+from .ports_out import (
+    AccountStore,
+    Clock,
+    HighScoreSink,
+    RandomSource,
+    SaveStore,
+    StoredAccount,
+    WorldSource,
+)
 
 
 @dataclass
@@ -58,18 +50,6 @@ class ChatMessage:
     name: str
     text: str
     at: str
-
-def check_connections(places: dict[str, Place]) -> None:
-    for place in places.values():
-        for direction, target in place.exits.items():
-            if (place.title, direction) in ONE_WAY:
-                continue
-            if places[target].exits.get(OPPOSITE[direction]) != place.title:
-                raise ValueError(
-                    f"{place.title} goes {direction.value} to {target}, "
-                    f"but {target} does not go {OPPOSITE[direction].value} back"
-                )
-
 
 def market_is_cleaning(clock: Clock) -> bool:
     # Cleaning crew contract (2023): the market is closed from minute 50 to
@@ -112,8 +92,7 @@ class GameState:
         high_scores: HighScoreSink,
         saves: SaveStore,
         accounts: AccountStore,
-        places: dict[str, Place],
-        items: dict[str, Item],
+        world: WorldSource,
     ) -> None:
         # The outbound ports (decisions 0013, 0014).
         self.clock = clock
@@ -121,16 +100,19 @@ class GameState:
         self.high_scores = high_scores
         self.save_store = saves
         self.account_store = accounts
-        self.places = places
-        self.items = items
-        self.gold_inside = {CRATE: 10}
+        # The fixed world, a fresh copy for this game (decision 0016).
+        data = world.load()
+        check_world(list(data.places), data.places, data.one_way)
+        self.start = data.start
+        self.places = data.places
+        self.items = data.items
+        self.gold_inside = data.gold_inside
         self.open_items: set[str] = set()
-        self.locked_items: set[str] = {MANHOLE}
+        self.locked_items: set[str] = set(data.locked)
         self.players: dict[str, PlayerState] = {}
         self.finished_games: list[dict] = []
         self.accounts: dict[str, Account] = {}
         self.chat: list[ChatMessage] = []
-        check_connections(self.places)
         self.load_saves()
         self.load_accounts()
 

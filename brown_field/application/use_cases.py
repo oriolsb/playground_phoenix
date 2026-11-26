@@ -18,7 +18,6 @@ from ..domain.constants import (
     NAME_MAX_LENGTH,
     RAT_CHANCE,
     RESERVED_NAMES,
-    START,
     TUBE_TUNNEL,
 )
 from ..domain.errors import InvalidName, ItemNotFound, NotAllowed
@@ -48,8 +47,8 @@ class RegisterPlayerUseCase:
             raise InvalidName("THIS NAME IS RESERVED.")
         if len(self.game.players) >= MAX_PLAYERS:
             raise NotAllowed("THE KATACOMBS ARE FULL. TRY AGAIN LATER.")
-        state = PlayerState(sid=self.game.new_sid(), name=name, location=START)
-        self.game.visit(state, START)
+        state = PlayerState(sid=self.game.new_sid(), name=name, location=self.game.start)
+        self.game.visit(state, self.game.start)
         self.game.players[state.sid] = state
         return self.game.to_player(state)
 

@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Protocol, TypeVar
 
+from ..domain.world import WorldData
+
 T = TypeVar("T")
 
 
@@ -77,3 +79,9 @@ class AccountStore(Protocol):
     def load_all(self) -> list[StoredAccount]: ...
 
     def put(self, account: StoredAccount) -> None: ...
+
+
+class WorldSource(Protocol):
+    """The fixed world (decision 0016, WORLD-1). Each load answers a fresh copy."""
+
+    def load(self) -> WorldData: ...

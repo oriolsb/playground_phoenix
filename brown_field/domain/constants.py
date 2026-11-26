@@ -1,4 +1,8 @@
-"""The limits of the game, and the names that its rules use (decision 0012)."""
+"""The limits of the game, and the names that its rules use (decisions 0012, 0016).
+
+The world itself is data, in `brown_field/spec/world.json`. A title or an item
+sid appears here only when a rule names it.
+"""
 
 from ..kata import Direction
 
@@ -20,42 +24,15 @@ OPPOSITE = {
     Direction.DOWN: Direction.UP,
 }
 
-BRICK_LANE = "BRICK LANE"
-BREWERY = "OLD TRUMAN BREWERY"
-CELLAR = "BREWERY CELLAR"
-ROOFTOP = "BREWERY ROOFTOP"
-MARKET = "SPITALFIELDS MARKET"
-BACK_YARD = "BACK YARD"
-BAKERY = "BRICK LANE BAKERY"
-FLOWER_MARKET = "COLUMBIA ROAD"
-BOXPARK = "BOXPARK"
-ARCHES = "RAILWAY ARCHES"
-TUBE_TUNNEL = "OLD TUBE TUNNEL"
-JUNCTION = "TUNNEL JUNCTION"
-KATACOMBS = "KATACOMBS"
-KATACOMBS_EXIT = "KATACOMBS EXIT"
+# The titles that rules name.
+CELLAR = "BREWERY CELLAR"  # MOVE-8: the rat
+TUBE_TUNNEL = "OLD TUBE TUNNEL"  # MOVE-8: where the rat drops the item
+MARKET = "SPITALFIELDS MARKET"  # MOVE-6: closed for cleaning
+BACK_YARD = "BACK YARD"  # ACT-13, ACT-14: the manhole
+KATACOMBS = "KATACOMBS"  # ACT-13: below the open manhole
 
-START = BRICK_LANE
+# The item sids that rules name.
+KEY = "000100-000000000000-00000002"  # ACT-14
+MANHOLE = "000100-000000000000-00000005"  # ACT-13, ACT-14
 
-# Product asked for a slide from the cellar into the tunnels (2022). The
-# world rule "each connection has a way back" does not apply to it.
-ONE_WAY = {(CELLAR, Direction.DOWN)}
-
-BEER = "000100-000000000000-00000001"
-KEY = "000100-000000000000-00000002"
-RING = "000100-000000000000-00000003"
-CRATE = "000100-000000000000-00000004"
-MANHOLE = "000100-000000000000-00000005"
-GOBLET = "000100-000000000000-00000006"
-BEER_2 = "000100-000000000000-00000007"
-BREAD_1 = "000100-000000000000-00000008"
-BREAD_2 = "000100-000000000000-00000009"
-BREAD_3 = "000100-000000000000-00000010"
-UMBRELLA = "000100-000000000000-00000011"
-FLOWERS = "000100-000000000000-00000012"
-CANDLE = "000100-000000000000-00000013"
-MAP = "000100-000000000000-00000014"
-ROPE = "000100-000000000000-00000015"
-SKULL = "000100-000000000000-00000016"
-
-ENERGY_FROM = {"BREAD": 5, "BEER": 3}
+ENERGY_FROM = {"BREAD": 5, "BEER": 3}  # ACT-15, by item name
