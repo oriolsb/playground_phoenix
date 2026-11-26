@@ -1,6 +1,6 @@
 # 0008 — The seams that the tests use become part of the boundary
 
-- **Status:** accepted
+- **Status:** replaced by 0013
 - **Date:** 2026-11-25
 - **Need:** operational. The Evaluation, and the regeneration of step 7.
 - **Traces to:** `ENTRY-1`, `ENTRY-2`, `MOVE-6`, `MOVE-8`.

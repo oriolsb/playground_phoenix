@@ -21,6 +21,7 @@ primitives: PHOENIX.md, brown_field/spec, brown_field/decisions, brown_field/tes
 sources: docs/katacombs.md
 rule_id: [A-Z]+-\d+
 reports: .phoenix/reports
+changes: brown_field/spec/changes
 ```
 
 ## Units

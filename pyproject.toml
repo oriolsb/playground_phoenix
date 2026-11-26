@@ -23,6 +23,7 @@ dev = [
     "time-machine>=3.6.0",
     "pytest-cov>=7.1.0",
     "mutmut>=3.8.1",
+    "mypy>=2.4.1",
 ]
 
 [tool.pytest.ini_options]
@@ -40,7 +41,7 @@ markers = [
 # Mutation testing (decision 0010): `uv run mutmut run`, then `uv run mutmut results`.
 # The hand-written mutants: brown_field/tests/fitness/mutation/run_mutants.py.
 [tool.mutmut]
-source_paths = ["brown_field/game.py", "brown_field/api.py"]
+source_paths = ["brown_field/game.py", "brown_field/api.py", "brown_field/domain/", "brown_field/application/", "brown_field/adapters/"]
 also_copy = ["brown_field/"]
 pytest_add_cli_args = [
     "-p", "no:warnings", "-x",
