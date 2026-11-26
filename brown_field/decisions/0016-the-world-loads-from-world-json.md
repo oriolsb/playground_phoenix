@@ -33,13 +33,15 @@ class WorldSource(Protocol):
 ```
 
 The default adapter reads `brown_field/spec/world.json` from the package,
-checks it against `world.schema.json` and the way-back rule of WORLD-2,
-and raises an error that names the location and the direction, as
-`check_connections()` does. `InMemoryGame` takes `world` as a keyword
+checks the unique titles and the way-back rule of WORLD-2, and raises an
+error that names the location and the direction, as `check_connections()`
+did. The game runs the way-back check again on any world source. The
+schema check stays in the tests (`tests/world/`), so the server needs no
+`jsonschema` at run time. `InMemoryGame` takes `world` as a keyword
 argument, with this adapter as its default.
 
-The code keeps a constant only for a title or a sid that a rule names:
-BRICK LANE (PLAYER-1), SPITALFIELDS MARKET (MOVE-6), BREWERY CELLAR and
+The start comes from `start` in the data (PLAYER-1). The code keeps a
+constant only for a title or a sid that a rule names: SPITALFIELDS MARKET (MOVE-6), BREWERY CELLAR and
 OLD TUBE TUNNEL (MOVE-8), BACK YARD, KATACOMBS, the manhole and the key
 (ACT-13, ACT-14), and the names BREAD and BEER (ACT-15). Every other title,
 sid, exit and description comes from the data.

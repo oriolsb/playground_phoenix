@@ -11,9 +11,10 @@ merges into the specification and this file moves to the archive.
 - Source: this change, and decision 0016.
 - Rule: When a game is built, Katacombs shall read the fixed world through
   the port `WorldSource`. Where `InMemoryGame` gets no world source,
-  Katacombs shall read `brown_field/spec/world.json`. If the world breaks
-  `world.schema.json` or the way-back rule of WORLD-2, then Katacombs
-  shall refuse to build the game, with an error that names the location.
+  Katacombs shall read `brown_field/spec/world.json`. If the world repeats a
+  title or breaks the way-back rule of WORLD-2, then Katacombs shall refuse
+  to build the game, with an error that names the location. The tests check
+  `world.json` against `world.schema.json`.
 - Why: the Specification names `world.json` as the world (WORLD-1). One
   copy cannot drift from another. A change of content is then a change of
   data, reviewed as data.

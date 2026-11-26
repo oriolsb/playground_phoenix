@@ -32,6 +32,7 @@ CONST = "brown_field/domain/constants.py"
 STATE = "brown_field/application/state.py"
 CASES = "brown_field/application/use_cases.py"
 REST = "brown_field/adapters/rest/app.py"
+WORLD = "brown_field/domain/world.py"
 
 # (file, old text, new text, label). Each old text must occur exactly once.
 MUTANTS = [
@@ -69,7 +70,7 @@ MUTANTS = [
     (CASES, "                game.disconnect(BACK_YARD, Direction.DOWN)", "                pass", "closing the manhole keeps the exit"),
     (HS, '"at": at.astimezone(timezone.utc).isoformat(timespec="seconds"),', '"at": at.astimezone(timezone.utc).isoformat(),', "high-score time with microseconds"),
     (STATE, "if sid not in self.players and sid not in self.items:", "if True:", "sid collision check removed"),
-    (STATE, "if (place.title, direction) in ONE_WAY:\n                continue", "if True:\n                continue", "world check disabled"),
+    (WORLD, "if (place.title, direction) in one_way:\n                continue", "if True:\n                continue", "world check disabled"),
     (STATE, "            if account.player_sid == player_sid:\n                return account", "            if account.player_sid:\n                return account", "a quit finds the first account with a player"),
     (DB, "ORDER BY saved_at", "ORDER BY player_sid", "saves load in sid order"),
     (CASES, '        state.moves += 1\n        return "SENT."', '        return "SENT."', "chat does not count a move"),

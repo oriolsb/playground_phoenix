@@ -24,14 +24,15 @@ building it in code (decision 0016).
 ## What changes
 
 - New outbound port `WorldSource`, in `brown_field/application/ports_out.py`.
-- New default adapter that reads `brown_field/spec/world.json`, checks it
-  against `world.schema.json` and the way-back rule (WORLD-2), and refuses
-  to start on a bad world, as `check_connections` does today
+- New default adapter that reads `brown_field/spec/world.json`, checks the
+  unique titles and the way-back rule (WORLD-2), and refuses to start on a
+  bad world, as `check_connections` does today
   (`game.py:304-313`).
 - New keyword argument of `InMemoryGame`: `world`. Its default is the
   JSON adapter.
+- The start comes from `start` in the data (PLAYER-1).
 - The code keeps a constant only for a title or a sid that a rule names:
-  the start (PLAYER-1), the market (MOVE-6), the cellar and the tunnel
+  the market (MOVE-6), the cellar and the tunnel
   (MOVE-8), the back yard, the katacombs, the manhole and the key
   (ACT-13, ACT-14), bread and beer (ACT-15).
 - Does not change: any location, exit, item, sid, value, gold or lock of
