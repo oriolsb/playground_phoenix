@@ -4,12 +4,15 @@ import hashlib
 import json
 import math
 import os
-import random
 import sqlite3
 from collections import Counter
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import timezone
 
+from .adapters.files.high_scores import JsonlHighScores
+from .adapters.system.clock import SystemClock
+from .adapters.system.random_source import StdRandom
+from .application.ports_out import Clock, HighScoreSink, RandomSource
 from .kata import Action, Bag, Direction, Item, Location, Player
 
 BAG_SLOTS = 8
@@ -313,26 +316,14 @@ def check_connections(places: dict[str, Place]) -> None:
                 )
 
 
-def market_is_cleaning() -> bool:
+def market_is_cleaning(clock: Clock) -> bool:
     # Cleaning crew contract (2023): the market is closed from minute 50 to
     # minute 59 of each hour. Ask facilities before you change this.
-    return datetime.now().minute >= 50
+    return clock.now().minute >= 50
 
 
 def slots_used(names: list[str]) -> int:
     return sum(math.ceil(count / ITEMS_PER_SLOT) for count in Counter(names).values())
-
-
-def save_high_score(state: PlayerState, score: int) -> None:
-    # The marketing leaderboard reads this file every night. Keep the format.
-    path = os.environ.get("KATACOMBS_HIGHSCORES", "highscores.jsonl")
-    line = {
-        "name": state.name,
-        "score": score,
-        "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-    }
-    with open(path, "a", encoding="utf-8") as file:
-        file.write(json.dumps(line) + "\n")
 
 
 SAVE_SCHEMA = """
@@ -359,10 +350,6 @@ CREATE TABLE IF NOT EXISTS accounts (
     snapshot TEXT
 )
 """
-
-
-def now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 def password_hash(password: str) -> str:
@@ -404,7 +391,18 @@ def write_account(account: Account) -> None:
 
 
 class InMemoryGame:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        clock: Clock | None = None,
+        random_source: RandomSource | None = None,
+        high_scores: HighScoreSink | None = None,
+    ) -> None:
+        # The outbound ports (decision 0013). Each default calls the standard
+        # library at the moment of each call, as the code did before.
+        self.clock: Clock = clock or SystemClock()
+        self.random_source: RandomSource = random_source or StdRandom()
+        self.high_scores: HighScoreSink = high_scores or JsonlHighScores()
         self.places = build_places()
         self.items = build_items()
         self.gold_inside = {CRATE: 10}
@@ -477,12 +475,15 @@ class InMemoryGame:
                 has_won=data["has_won"],
             )
 
+    def now_iso(self) -> str:
+        return self.clock.now().astimezone(timezone.utc).isoformat(timespec="seconds")
+
     def new_sid(self) -> str:
         while True:
             sid = (
-                f"{random.randint(0, 999999):06d}-"
-                f"{random.randint(0, 999999999999):012d}-"
-                f"{random.randint(0, 99999999):08d}"
+                f"{self.random_source.digits(6)}-"
+                f"{self.random_source.digits(12)}-"
+                f"{self.random_source.digits(8)}"
             )
             if sid not in self.players and sid not in self.items:
                 return sid
@@ -626,7 +627,7 @@ class MoveUseCase:
         if direction not in exits:
             raise NotAllowed("YOU CAN'T GO THAT WAY.")
         target = exits[direction]
-        if target == MARKET and market_is_cleaning():
+        if target == MARKET and market_is_cleaning(game.clock):
             raise NotAllowed("THE MARKET IS CLOSED FOR CLEANING. COME BACK LATER.")
         state.energy -= 1
         state.moves += 1
@@ -637,7 +638,7 @@ class MoveUseCase:
         if game.places[state.location].is_exit:
             state.has_won = True
             score = game.to_bag(state).score
-            save_high_score(state, score)
+            game.high_scores.append(state.name, score, game.clock.now())
             game.finished_games.append(
                 {"name": state.name, "score": score, "moves": state.moves}
             )
@@ -645,9 +646,9 @@ class MoveUseCase:
 
     def rat(self, state: PlayerState) -> str:
         cheap = [sid for sid in state.bag if not self.game.items[sid].value]
-        if not cheap or random.random() >= RAT_CHANCE:
+        if not cheap or self.game.random_source.chance() >= RAT_CHANCE:
             return ""
-        stolen = random.choice(cheap)
+        stolen = self.game.random_source.choice(cheap)
         state.bag.remove(stolen)
         self.game.places[TUBE_TUNNEL].items.append(stolen)
         return f"A RAT RUNS OFF WITH YOUR {self.game.items[stolen].name}."
@@ -763,7 +764,7 @@ class SaveGameUseCase:
                     state.sid,
                     state.name,
                     json.dumps(payload),
-                    datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                    self.game.now_iso(),
                 ),
             )
             connection.commit()

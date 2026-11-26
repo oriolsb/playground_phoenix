@@ -27,7 +27,6 @@ from .game import (
     RegisterPlayerUseCase,
     SaveGameUseCase,
     UseItemUseCase,
-    now_iso,
 )
 from .kata import Action, Bag, Direction, Item, Location, Player
 
@@ -167,7 +166,7 @@ def create_app(game: InMemoryGame | None = None) -> FastAPI:
     def send_message(player_sid: PlayerSid, body: NewMessage) -> dict:
         state = game.player(player_sid)
         game.chat.append(
-            ChatMessage(location=state.location, name=state.name, text=body.text, at=now_iso())
+            ChatMessage(location=state.location, name=state.name, text=body.text, at=game.now_iso())
         )
         state.moves += 1
         return {"message": "SENT."}
