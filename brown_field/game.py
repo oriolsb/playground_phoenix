@@ -5,6 +5,8 @@ re-exports every name of the frozen boundary (decision 0008, ENTRY-3), so
 `from brown_field.game import MoveUseCase, NotAllowed` keeps working.
 """
 
+from typing import Any
+
 from .adapters.files.high_scores import JsonlHighScores
 from .adapters.files.world_json import JsonWorld
 from .adapters.sqlite.stores import SqliteAccounts, SqliteSaves
@@ -45,6 +47,7 @@ __all__ = [
     "Account",
     "ChatMessage",
     "InMemoryGame",
+    "default_adapters",
     "inbound_ports",
     "InspectBagUseCase",
     "InspectItemUseCase",
@@ -72,8 +75,37 @@ __all__ = [
 ]
 
 
+def default_adapters(
+    *,
+    clock: Clock | None = None,
+    random_source: RandomSource | None = None,
+    high_scores: HighScoreSink | None = None,
+    saves: SaveStore | None = None,
+    accounts: AccountStore | None = None,
+    world: WorldSource | None = None,
+) -> dict[str, Any]:
+    """The six adapters of a game: each given one, or its default (decision 0021).
+
+    Each default calls the standard library or the database file at the
+    moment of each call, as the code did before (decisions 0013, 0014).
+    """
+    return {
+        "clock": clock or SystemClock(),
+        "random_source": random_source or StdRandom(),
+        "high_scores": high_scores or JsonlHighScores(),
+        "saves": saves or SqliteSaves(),
+        "accounts": accounts or SqliteAccounts(),
+        "world": world or JsonWorld(),
+    }
+
+
 class InMemoryGame(GameState):
-    """The game with one adapter per outbound port, each with a default."""
+    """The game built from `default_adapters`.
+
+    The name is frozen (decision 0008). Despite it, the defaults are the
+    database file, the high-score file and `world.json`, not memory. For a
+    game with no file, pass the stores of `adapters/memory/`.
+    """
 
     def __init__(
         self,
@@ -85,15 +117,15 @@ class InMemoryGame(GameState):
         accounts: AccountStore | None = None,
         world: WorldSource | None = None,
     ) -> None:
-        # Each default calls the standard library or the database file at the
-        # moment of each call, as the code did before (decisions 0013, 0014).
         super().__init__(
-            clock=clock or SystemClock(),
-            random_source=random_source or StdRandom(),
-            high_scores=high_scores or JsonlHighScores(),
-            saves=saves or SqliteSaves(),
-            accounts=accounts or SqliteAccounts(),
-            world=world or JsonWorld(),
+            **default_adapters(
+                clock=clock,
+                random_source=random_source,
+                high_scores=high_scores,
+                saves=saves,
+                accounts=accounts,
+                world=world,
+            )
         )
 
 
