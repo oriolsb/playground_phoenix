@@ -1,6 +1,6 @@
 # 0016 — The world loads from world.json through a world port
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-26
 - **Need:** operational. One copy of the world, owned by the Specification.
   Anybody who changes the content of the game changes data, not code.

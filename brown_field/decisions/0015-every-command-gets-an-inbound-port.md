@@ -1,6 +1,6 @@
 # 0015 — Chat, the leaderboard, accounts and the legacy pickup get inbound ports
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-26
 - **Need:** operational. Every adapter after REST must reach every command
   through a port. Mobile client v1 must see no change of the legacy pickup

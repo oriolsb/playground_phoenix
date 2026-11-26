@@ -1,6 +1,6 @@
 # 0020 — The game state holds no rules and no view mapping
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-26
 - **Need:** operational. Each job of the context object gets one home, so it
   does not grow into a new god object (finding F3 of the hexagonal review;

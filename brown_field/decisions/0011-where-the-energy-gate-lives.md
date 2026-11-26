@@ -1,12 +1,12 @@
 # 0011 — Where the energy gate lives, and at which energy it closes
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-26
 - **Need:** operational. Day 3 restructures the code behind the ports; the
   move rule must hold the same for every caller. The comment ties the gate
   to the mobile release, so mobile client v1 and the web client are the
   callers with the need.
-- **Traces to:** `MOVE-5`, `WEB-MOVE-2`, `MOVE-2`, `ACT-15`.
+- **Traces to:** `MOVE-5`, `WEB-MOVE-2`, `MOVE-2`, `ACT-15`, `ARCH-5`.
 - **Change:** hexagon-9-energy-gate
 - **Evidence (legacy code only):**
   - `api.py:210-214`, "Added for the mobile release: a tired player cannot

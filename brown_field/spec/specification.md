@@ -1,6 +1,6 @@
 > **Characterization record, 2026-11-25.** Every rule below records what the legacy code does
 > today, and a test pins it. A rule's `Status` says whether anybody decided it:
-> **50 observed** (the code does it; nobody decided it), **13 accepted** (kept on purpose; it cites its decision record), **11 contested** (in doubt; it states its open question).
+> **50 observed** (the code does it; nobody decided it), **24 accepted** (kept on purpose; it cites its decision record), **10 contested** (in doubt; it states its open question).
 > "Why: A guess:" marks a reason that nobody wrote down; it is the reader's inference.
 
 # Katacombs — Specification (game-server)
@@ -63,6 +63,12 @@ caller sees. The internal rules and the operational limits come next
 | Database file | The SQLite file that holds the saves and the accounts: `KATACOMBS_DB`, else `katacombs.db`. | database (alone), DB |
 | High-score file | The file of high-score lines: `KATACOMBS_HIGHSCORES`, else `highscores.jsonl`. | scores file |
 | Error reason | The kind of an error: `INVALID_REQUEST`, `INVALID_VALUE`, `NOT_FOUND`, `NOT_ALLOWED`. Each has one HTTP status. Not sent on the wire today. | error type, error code |
+| Port | An interface that the core of the game publishes or needs. | interface (alone), API (for this idea) |
+| Inbound port | A port that a caller uses to drive the game: one `Protocol` in `kata.py` with one method `execute`. | service, endpoint |
+| Outbound port | A port that the game uses to reach the outside: the clock, randomness, files, storage. A `Protocol` in `brown_field/application/ports_out.py`. | repository (alone), driver |
+| Adapter | Code that connects a port to one technology: FastAPI, SQLite, the file system, the system clock. | implementation (alone), plugin |
+| Domain model | The rules of the game as objects with behavior, with no input or output. | entities, model (alone) |
+| Composition root | The one place that builds the adapters and hands them to the game: `InMemoryGame` and `create_app`. | container, context (alone), wiring |
 
 ## Data ownership
 
@@ -71,16 +77,16 @@ caller sees. The internal rules and the operational limits come next
 | The fixed world (`brown_field/spec/world.json`): the start, each location and item, the slide | nobody at run time: the specification | game-server (start), the tests |
 | World state: items per location, open items, locked items, exits | game-server | game-server, every client through the API |
 | Player state: location, bag, gold, energy, move count, visited, opened, won | game-server | game-server, every client through the API |
-| Saves (SQLite table `saves` in the file `KATACOMBS_DB`) | game-server (save) | game-server (start) |
-| Accounts with snapshots (SQLite table `accounts` in `KATACOMBS_DB`) | game-server (register, login, quit) | game-server (start, login) |
+| Saves (SQLite table `saves` in the file `KATACOMBS_DB`) | game-server (save), through the port `SaveStore` | game-server (start), through the port `SaveStore` |
+| Accounts with snapshots (SQLite table `accounts` in `KATACOMBS_DB`) | game-server (register, login, quit), through the port `AccountStore` | game-server (start, login), through the port `AccountStore` |
 | Leaderboard (in memory) | game-server (win) | clients through `GET /leaderboard` |
-| High-score file (`KATACOMBS_HIGHSCORES`, JSON lines) | game-server (win) | the nightly marketing job, outside this repository |
+| High-score file (`KATACOMBS_HIGHSCORES`, JSON lines) | game-server (win), through the port `HighScoreSink` | the nightly marketing job, outside this repository |
 | Chat log (in memory) | game-server (send) | clients through `GET /player/{playerSid}/chat` |
 | Player sid in the browser (`katacombs.sid`) | web client | web client |
 
-No dataset has two writers across units. Inside game-server, both
-`game.py` and `api.py` write the player and world state (see the
-assessment); that is an internal finding, not a boundary one.
+No dataset has two writers across units. Inside game-server, only the
+use cases write the player and world state. The REST adapter reaches it
+only through the inbound ports (ARCH-5, ARCH-8).
 
 ## Rules
 
@@ -291,14 +297,18 @@ assessment); that is an internal finding, not a boundary one.
 
 #### MOVE-5 — A player with no energy can't move
 
-- Status: contested. Open question: The gate is in the REST route only: the move port lets the energy go below 0, and the client stops at 1 (WEB-MOVE-2). Where does the rule belong, and is the limit 0 or 1? A proposed answer, for the group: decision 0011 (the port, at 0).
-- Source: legacy code (api.py:210-213, "Added for the mobile release").
+- Status: accepted (decision 0011). The gate is at the port, at energy 0.
+- Source: legacy code (api.py:210-213, "Added for the mobile release"), revised by this change.
 - Rule: If a player with an energy of 0 or less moves, then Katacombs shall
-  refuse the move.
-- Why: A guess: energy is the cost of moving; food and drink restore it.
+  refuse the move, at the move port and so over every adapter.
+- Why: energy is the cost of moving; food and drink restore it. The gate
+  came with the mobile release. At the port, every adapter gets it.
 - Observable result: status 405, error reason `NOT_ALLOWED`, message
   `YOU ARE TOO TIRED TO MOVE. EAT OR DRINK SOMETHING.` This check comes
-  before every other move check, the win included.
+  before every other move check, the win included. At the port,
+  `MoveUseCase` raises `NotAllowed` with the same message, and the energy
+  and the move count do not change.
+- Revised: 2026-11-26. The gate moves from the REST route to the move port, at 0 (decision 0011).
 
 #### MOVE-6 — The market is closed for cleaning in the last ten minutes of each hour
 
@@ -885,6 +895,30 @@ of another version must read them.
 - Observable result: `brown_field.api.app` answers `GET /leaderboard` with
   200. It reads the database file once, at the import.
 
+#### ENTRY-3 — The port tier offers a use case for each command
+
+- Status: accepted (decision 0015).
+- Source: this change, and decision 0015. It extends the port tier of
+  decision 0008.
+- Rule: Katacombs shall offer, in the module `brown_field.game`, the use
+  cases `SendMessageUseCase`, `ReadMessagesUseCase`,
+  `ShowLeaderboardUseCase` and `LegacyPickupUseCase`, beside the twelve of
+  decision 0008. Each one shall take the game as its only argument, and
+  shall satisfy the port of the same name in `kata.py` (ARCH-2).
+  `RegisterAccountUseCase` and `LoginUseCase` shall satisfy the ports
+  `RegisterAccount` and `Login`.
+- Why: a command with no use case can be reached only over HTTP, so a
+  port test cannot pin it and a new adapter must copy its rule. Chat, the
+  leaderboard and the legacy pickup are such commands today.
+- Observable result: `SendMessageUseCase(game).execute(sid, "HI")` answers
+  `SENT.` and adds one to the move count (CHAT-1, CHAT-3).
+  `ReadMessagesUseCase(game).execute(sid)` answers the chat lines of the
+  player's location (CHAT-2). `ShowLeaderboardUseCase(game).execute()`
+  answers the finished games, highest score first (BOARD-1).
+  `LegacyPickupUseCase(game).execute(sid, item_sid)` answers `OK` and
+  behaves as LEGACY-1 and LEGACY-2. `RegisterAccountUseCase(game).execute`
+  answers an email and a name, and no password digest.
+
 ### Operations
 
 #### OPS-1 — Each command responds in less than 100 ms at p99
@@ -898,6 +932,175 @@ of another version must read them.
   process, a mix of looks, the bag, moves, item actions, chat and a save,
   and the 99th percentile of their response times (nearest rank: the 99th
   of the 100 sorted times) is below 100 ms.
+
+### Structure
+
+These rules hold the shape of the code behind the boundary. A caller of
+the REST API or of the ports does not see them. A regeneration must keep
+them, and the fitness functions check them.
+
+#### ARCH-1 — Each layer imports only the layers inside it
+
+- Status: accepted (decision 0018, which revises decision 0012).
+- Source: change `hexagon-1-guards`, revised by `hexagon-7-domain-types`.
+- Rule: Katacombs shall keep five layers in the package `brown_field`,
+  from the inside out: the domain (`brown_field/domain/`), the ports
+  (`kata.py`), the application (`brown_field/application/`), the adapters
+  (`brown_field/adapters/`), and the composition root (`game.py`,
+  `api.py`, `__main__.py`). A module shall import only its own layer and
+  the layers inside it. The domain and the application shall not import
+  `sqlite3`, `os`, `fastapi`, `pydantic`, `uvicorn`, or the functions
+  `datetime.now`, `open`, and the module `random`.
+- Why: the rules of the game must survive a change of storage, of
+  transport, of clock, or of the public API.
+- Observable result: the fitness function of ARCH-1 uses the five layers
+  above, and fails on a planted import from the domain into `kata.py`.
+- Revised: 2026-11-26. The ports move outside the domain (decision 0018).
+
+#### ARCH-2 — Each use case satisfies its port
+
+- Status: accepted (decision 0012).
+- Source: this change, and the need of decision 0012.
+- Rule: Katacombs shall make each `*UseCase` class satisfy the port of the
+  same name in `kata.py`, so that a static type checker accepts each
+  use case where its port is expected.
+- Why: a Python `Protocol` is structural, and nothing checks it at run
+  time. Without a type check, a use case drifts from its port and only the
+  REST tests notice, late. In Java the compiler does this check.
+- Observable result: a check file assigns each use case to its port, for
+  example `move: Move = MoveUseCase(InMemoryGame())`. The type checker
+  (pyright or mypy, strict on that file) reports zero errors. With one
+  parameter of `MoveUseCase.execute` renamed, it reports one error.
+
+#### ARCH-3 — The game reads the time, draws chance and writes high scores through outbound ports
+
+- Status: accepted (decision 0013).
+- Source: this change; decisions 0008 and 0013.
+- Rule: Katacombs shall read the time only through the port `Clock`,
+  draw random numbers only through the port `RandomSource`, and append
+  high-score lines only through the port `HighScoreSink`. Where
+  `InMemoryGame` gets no adapter for one of these ports, Katacombs shall
+  use the default adapter, which calls `datetime.now()`, the functions of
+  the module `random`, or the file of CONF-2, at the moment of each call.
+- Why: a rule that calls the standard library directly can be faked only
+  by patching the standard library. A port lets a test or a new adapter
+  give the time or the chance directly. The default adapters keep the
+  seams of decision 0008, so the tests of today still control the clock
+  and the rat.
+- Observable result: (1) a fitness function finds no call to
+  `datetime.now`, `random.` or `open(` under `brown_field/domain/` and
+  `brown_field/application/`. (2) A game built with a fixed clock at
+  minute 55 refuses a move into SPITALFIELDS MARKET, and one at minute 10
+  allows it, with no `time_machine`. (3) A game built with a random source
+  that answers 0.0 lets the rat steal, as MOVE-8 says. (4) The harness
+  tests (`tests/harness/`) pass unchanged.
+
+#### ARCH-4 — Saves and accounts are stored through storage ports
+
+- Status: accepted (decision 0014).
+- Source: this change, and decision 0014.
+- Rule: Katacombs shall read and write the saves only through the port
+  `SaveStore`, and the accounts only through the port `AccountStore`.
+  Where `InMemoryGame` gets no store, Katacombs shall use the SQLite
+  adapters on the database file of CONF-1, and shall load the saves and
+  the accounts when the game is built.
+- Why: the rules of saving, logging in and quitting must not depend on
+  SQLite. A test or a tool can then build a game with no file. The default
+  keeps the start of today, so a restart still brings the players back
+  (SAVE-2) and `brown_field.api.app` still reads the file once (ENTRY-2).
+- Observable result: (1) a fitness function finds `sqlite3` imported only
+  under `brown_field/adapters/sqlite/`. (2) A game built with memory
+  stores, in an empty working directory with `KATACOMBS_DB` unset,
+  registers, saves, logs in and quits a player, and no file appears.
+  (3) The tests of STORE-1, STORE-2, SAVE-2 and the old save without
+  energy (`tests/golden/old-save-without-energy.db`) pass unchanged.
+
+#### ARCH-5 — The REST adapter holds no rule and changes no state
+
+- Status: accepted (decision 0011, which revises decisions 0015 and 0019).
+- Source: change `hexagon-4-inbound-ports`, revised by `hexagon-8-inbound-injection` and `hexagon-9-energy-gate`.
+- Rule: Katacombs shall make each route of the REST adapter parse the
+  request, call one inbound port, and map the result or the error to the
+  response. A route shall hold no game rule and reach the state only
+  through the ports, with no exception.
+- Why: a rule in a route is lost when the REST adapter is regenerated
+  alone, and a second adapter must copy it.
+- Observable result: the `move` route calls only `Move`. The fitness
+  function of ARCH-5 has no exception. The transcripts pass unchanged.
+- Revised: 2026-11-26. The MOVE-5 exception ends (decision 0011).
+
+#### ARCH-6 — The game reads its world through a world port
+
+- Status: accepted (decision 0016).
+- Source: this change, and decision 0016.
+- Rule: When a game is built, Katacombs shall read the fixed world through
+  the port `WorldSource`. Where `InMemoryGame` gets no world source,
+  Katacombs shall read `brown_field/spec/world.json`. If the world repeats a
+  title or breaks the way-back rule of WORLD-2, then Katacombs shall refuse
+  to build the game, with an error that names the location. The tests check
+  `world.json` against `world.schema.json`.
+- Why: the Specification names `world.json` as the world (WORLD-1). One
+  copy cannot drift from another. A change of content is then a change of
+  data, reviewed as data.
+- Observable result: (1) the world tests (`tests/world/`) pass unchanged.
+  (2) A game built with a world source that has a missing way back fails
+  to build, and the error names the location and the direction, as
+  `check_connections` does today. (3) A fitness function finds in the code
+  no location title and no item sid that no rule names.
+
+#### ARCH-7 — The domain imports nothing outside the domain
+
+- Status: accepted (decision 0018).
+- Source: this change; finding F4 of the hexagonal review; decision 0018.
+- Rule: Katacombs shall define every type that a game rule uses in
+  `brown_field/domain/`, and no module of the domain shall import
+  `brown_field.kata` or any other module outside `brown_field/domain/`.
+  `kata.py` shall re-export `Item`, `Action`, `Direction` and the error
+  types, so their public names stay importable from it.
+- Why: the domain is the innermost ring. A domain that imports the API
+  module breaks when the API changes, and cannot be regenerated alone.
+- Observable result: (1) a fitness function finds no import of
+  `brown_field.kata` under `brown_field/domain/`. (2)
+  `from brown_field.kata import Item, Action, Direction, NotAllowed` works,
+  and each name is the same object as its domain definition. (3) The whole
+  suite passes unchanged.
+
+#### ARCH-8 — The REST adapter depends on the inbound ports only
+
+- Status: accepted (decision 0019).
+- Source: this change; finding F1 of the hexagonal review; decision 0019.
+- Rule: Katacombs shall build the REST adapter from an `InboundPorts`
+  value, whose fields are typed as the inbound ports of `kata.py`. No
+  module under `brown_field/adapters/rest/` shall import
+  `brown_field.application` or `brown_field.domain`; it shall take its
+  ports, view models and error types from `kata.py`.
+- Why: a driving adapter that depends on concrete use cases and on the
+  game state can bypass every port. With the ports injected, the adapter
+  can be tested with fakes, and the ports become the real contract.
+- Observable result: (1) a fitness function finds no import of
+  `brown_field.application` or `brown_field.domain` under
+  `adapters/rest/`. (2) A test builds the REST adapter from fake ports,
+  with no `GameState`, and `POST /game/player` answers 201 with the
+  player that the fake `RegisterPlayer` returns. (3) The contract test and
+  every REST feature pass unchanged.
+
+#### ARCH-9 — The game state holds no rule and no mapping
+
+- Status: accepted (decision 0020).
+- Source: this change; finding F3 of the hexagonal review; decision 0020.
+- Rule: Katacombs shall keep in `application/state.py` only the outbound
+  ports, the aggregates and their lookups. A game rule shall live in
+  `brown_field/domain/`, and the mapping to the view models of `kata.py`
+  shall live in `application/views.py`.
+- Why: a context object that also holds rules and mappings grows into a
+  new god object (decision 0012, "Risks that stay"). Each job then has one
+  home.
+- Observable result: (1) a fitness function finds in `application/state.py`
+  no function or method named `to_*`, no import of the view models
+  `Player`, `Bag` or `Location`, and no definition of `market_is_cleaning`
+  or `password_hash`. (2) A domain test checks `market_is_cleaning` at
+  minutes 49, 50 and 59 with no clock. (3) The tests of MOVE-6 and STORE-3
+  pass unchanged.
 
 ### Legacy
 
