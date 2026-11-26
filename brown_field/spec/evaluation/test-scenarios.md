@@ -95,6 +95,11 @@ Do not type this line by hand. After the review, a person runs
 | CONF-3 | python -m brown_field serves the API on 127.0.0.1, port 8000 | - | durable | `boundary/startup.feature` |
 | ENTRY-1 | Two servers made from one game share its players (+1 more) | - | durable | `boundary/startup.feature` |
 | ENTRY-2 | The module brown_field.api holds a ready server (+1 more) | - | durable | `boundary/startup.feature` |
+| ENTRY-3 | The chat ports send and read the messages of the location (+2 more) | port | port while the seam holds | `ports/ports.feature` |
+| ENTRY-4 | The REST adapter reads no game state outside a use case (+1 more) | - | durable | `fitness/structure.feature` |
+| ENTRY-5 | The bag through the port shows the energy | port | port while the seam holds | `ports/ports.feature` |
+| ENTRY-6 | A game on in-memory stores saves, restarts and records a win, and writes no file (+4 more) | port, - | port while the seam holds; durable (fitness) | `ports/ports.feature`, `fitness/structure.feature` |
+| ENTRY-7 | The move port reads the clock it is given (+1 more) | port | port while the seam holds | `ports/ports.feature` |
 | OPS-1 | A mix of 100 commands responds in less than 100 ms at p99 | api | live (simulated) | `fitness/ops.feature` |
 | LEGACY-1 | A bag of 8 slots, 3 items with the same name per slot, refuses a ninth slot (+1 more) | api | durable | `rest/items.feature`, `rest/legacy.feature` |
 | LEGACY-2 | The legacy pickup of an item elsewhere answers OK and changes nothing | api | durable | `rest/legacy.feature` |
@@ -154,7 +159,6 @@ one records today's behavior; a decision record must confirm or change it.
 | `rest/save.feature`: A restart puts a saved item back in its location too | SAVE-2 |
 | `rest/save.feature`: A save from before 2023 stops the server from starting | SAVE-2 |
 | `rest/save.feature`: the save answer holds the server's file path | SAVE-1 |
-| `ports/ports.feature`: The move port has no energy gate | MOVE-5 |
 
 ## Rules with a partial check
 

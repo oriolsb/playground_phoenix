@@ -1,23 +1,24 @@
 """In-memory implementation of the Katacombs use cases."""
 
 import hashlib
-import json
 import math
-import os
-import random
-import sqlite3
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from .kata import Action, Bag, Direction, Item, Location, Player
+from . import kata
+from .adapters.highscores import JsonlHighScores
+from .adapters.sqlite_store import SqliteStore
+from .adapters.system import local_now, stdlib
+from .core.ports import AccountStore, Clock, HighScoreSink, Random, SaveStore
+from .core.state import START_ENERGY, Account, ChatMessage, PlayerState, from_payload, to_payload
+from .kata import Action, Bag, Direction, FinishedGame, Item, Location, Player
 
 BAG_SLOTS = 8
 ITEMS_PER_SLOT = 3
 NAME_MAX_LENGTH = 50
 MAX_PLAYERS = 20
 RESERVED_NAMES = {"ADMIN"}
-START_ENERGY = 12
 MAX_ENERGY = 20
 RAT_CHANCE = 0.2
 
@@ -99,37 +100,6 @@ class Place:
     items: list[str]
     gold: int = 0
     is_exit: bool = False
-
-
-@dataclass
-class PlayerState:
-    sid: str
-    name: str
-    location: str
-    bag: list[str] = field(default_factory=list)
-    gold: int = 0
-    energy: int = START_ENERGY
-    moves: int = 0
-    visited: set[str] = field(default_factory=set)
-    opened: set[str] = field(default_factory=set)
-    has_won: bool = False
-
-
-@dataclass
-class Account:
-    email: str
-    password_hash: str
-    name: str
-    player_sid: str | None = None
-    snapshot: dict | None = None
-
-
-@dataclass
-class ChatMessage:
-    location: str
-    name: str
-    text: str
-    at: str
 
 
 def build_items() -> dict[str, Item]:
@@ -313,52 +283,14 @@ def check_connections(places: dict[str, Place]) -> None:
                 )
 
 
-def market_is_cleaning() -> bool:
+def market_is_cleaning(now: datetime) -> bool:
     # Cleaning crew contract (2023): the market is closed from minute 50 to
     # minute 59 of each hour. Ask facilities before you change this.
-    return datetime.now().minute >= 50
+    return now.minute >= 50
 
 
 def slots_used(names: list[str]) -> int:
     return sum(math.ceil(count / ITEMS_PER_SLOT) for count in Counter(names).values())
-
-
-def save_high_score(state: PlayerState, score: int) -> None:
-    # The marketing leaderboard reads this file every night. Keep the format.
-    path = os.environ.get("KATACOMBS_HIGHSCORES", "highscores.jsonl")
-    line = {
-        "name": state.name,
-        "score": score,
-        "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-    }
-    with open(path, "a", encoding="utf-8") as file:
-        file.write(json.dumps(line) + "\n")
-
-
-SAVE_SCHEMA = """
-CREATE TABLE IF NOT EXISTS saves (
-    player_sid TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    payload TEXT NOT NULL,
-    saved_at TEXT NOT NULL
-)
-"""
-
-
-def save_path() -> str:
-    # The support laptop sets KATACOMBS_DB. Nobody else does.
-    return os.environ.get("KATACOMBS_DB", "katacombs.db")
-
-
-ACCOUNTS_SCHEMA = """
-CREATE TABLE IF NOT EXISTS accounts (
-    email TEXT PRIMARY KEY,
-    password_hash TEXT NOT NULL,
-    name TEXT NOT NULL,
-    player_sid TEXT,
-    snapshot TEXT
-)
-"""
 
 
 def now_iso() -> str:
@@ -370,41 +302,21 @@ def password_hash(password: str) -> str:
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
 
-def snapshot_of(state: "PlayerState") -> dict:
-    return {
-        "location": state.location,
-        "bag": list(state.bag),
-        "gold": state.gold,
-        "energy": state.energy,
-        "moves": state.moves,
-        "visited": sorted(state.visited),
-        "opened": sorted(state.opened),
-        "has_won": state.has_won,
-    }
-
-
-def write_account(account: Account) -> None:
-    connection = sqlite3.connect(save_path())
-    try:
-        connection.execute(ACCOUNTS_SCHEMA)
-        connection.execute(
-            "INSERT OR REPLACE INTO accounts"
-            " (email, password_hash, name, player_sid, snapshot) VALUES (?, ?, ?, ?, ?)",
-            (
-                account.email,
-                account.password_hash,
-                account.name,
-                account.player_sid,
-                json.dumps(account.snapshot) if account.snapshot is not None else None,
-            ),
-        )
-        connection.commit()
-    finally:
-        connection.close()
-
-
 class InMemoryGame:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        saves: SaveStore | None = None,
+        accounts: AccountStore | None = None,
+        highscores: HighScoreSink | None = None,
+        clock: Clock | None = None,
+        rng: Random | None = None,
+    ) -> None:
+        store = SqliteStore()
+        self.save_store = saves or store
+        self.account_store = accounts or store
+        self.highscores = highscores or JsonlHighScores()
+        self.clock = clock or local_now
+        self.rng = rng or stdlib
         self.places = build_places()
         self.items = build_items()
         self.gold_inside = {CRATE: 10}
@@ -419,25 +331,8 @@ class InMemoryGame:
         self.load_accounts()
 
     def load_accounts(self) -> None:
-        path = save_path()
-        if not os.path.exists(path):
-            return
-        connection = sqlite3.connect(path)
-        try:
-            connection.execute(ACCOUNTS_SCHEMA)
-            rows = connection.execute(
-                "SELECT email, password_hash, name, player_sid, snapshot FROM accounts"
-            ).fetchall()
-        finally:
-            connection.close()
-        for email, hashed, name, player_sid, snapshot in rows:
-            self.accounts[email] = Account(
-                email=email,
-                password_hash=hashed,
-                name=name,
-                player_sid=player_sid,
-                snapshot=json.loads(snapshot) if snapshot else None,
-            )
+        for account in self.account_store.load_accounts():
+            self.accounts[account.email] = account
 
     def account_of(self, player_sid: str) -> Account | None:
         for account in self.accounts.values():
@@ -448,41 +343,18 @@ class InMemoryGame:
     def load_saves(self) -> None:
         # A restart reads the saves, so a player keeps the bag and the place.
         # The world is not in the save. Nobody wrote down why.
-        path = save_path()
-        if not os.path.exists(path):
-            return
-        connection = sqlite3.connect(path)
-        try:
-            connection.execute(SAVE_SCHEMA)
-            rows = connection.execute(
-                "SELECT player_sid, name, payload FROM saves ORDER BY saved_at"
-            ).fetchall()
-        finally:
-            connection.close()
-        for sid, name, payload in rows:
-            data = json.loads(payload)
+        for sid, name, data in self.save_store.load_saves():
             if data["location"] not in self.places:
                 # The world changed under an old save.
                 continue
-            self.players[sid] = PlayerState(
-                sid=sid,
-                name=name,
-                location=data["location"],
-                bag=list(data["bag"]),
-                gold=data["gold"],
-                energy=data["energy"],
-                moves=data["moves"],
-                visited=set(data["visited"]),
-                opened=set(data["opened"]),
-                has_won=data["has_won"],
-            )
+            self.players[sid] = from_payload(sid, name, data)
 
     def new_sid(self) -> str:
         while True:
             sid = (
-                f"{random.randint(0, 999999):06d}-"
-                f"{random.randint(0, 999999999999):012d}-"
-                f"{random.randint(0, 99999999):08d}"
+                f"{self.rng.randint(0, 999999):06d}-"
+                f"{self.rng.randint(0, 999999999999):012d}-"
+                f"{self.rng.randint(0, 99999999):08d}"
             )
             if sid not in self.players and sid not in self.items:
                 return sid
@@ -525,7 +397,7 @@ class InMemoryGame:
         )
 
     def to_bag(self, state: PlayerState) -> Bag:
-        return Bag(items=[self.items[sid] for sid in state.bag], gold=state.gold)
+        return Bag(items=[self.items[sid] for sid in state.bag], gold=state.gold, energy=state.energy)
 
     def to_player(self, state: PlayerState) -> Player:
         return Player(
@@ -571,8 +443,8 @@ class QuitGameUseCase:
         state = self.game.player(player_sid)
         account = self.game.account_of(player_sid)
         if account is not None:
-            account.snapshot = snapshot_of(state)
-            write_account(account)
+            account.snapshot = to_payload(state)
+            self.game.account_store.write_account(account)
         self.game.places[state.location].items.extend(state.bag)
         del self.game.players[player_sid]
 
@@ -620,13 +492,16 @@ class MoveUseCase:
     def execute(self, player_sid: str, direction: Direction) -> Location:
         game = self.game
         state = game.player(player_sid)
+        # Added for the mobile release: a tired player cannot move (decision 0011).
+        if state.energy <= 0:
+            raise NotAllowed("YOU ARE TOO TIRED TO MOVE. EAT OR DRINK SOMETHING.")
         if state.has_won:
             raise NotAllowed("THE GAME IS OVER. YOU ALREADY FOUND THE EXIT.")
         exits = game.places[state.location].exits
         if direction not in exits:
             raise NotAllowed("YOU CAN'T GO THAT WAY.")
         target = exits[direction]
-        if target == MARKET and market_is_cleaning():
+        if target == MARKET and market_is_cleaning(game.clock()):
             raise NotAllowed("THE MARKET IS CLOSED FOR CLEANING. COME BACK LATER.")
         state.energy -= 1
         state.moves += 1
@@ -637,7 +512,7 @@ class MoveUseCase:
         if game.places[state.location].is_exit:
             state.has_won = True
             score = game.to_bag(state).score
-            save_high_score(state, score)
+            game.highscores.append(state.name, score)
             game.finished_games.append(
                 {"name": state.name, "score": score, "moves": state.moves}
             )
@@ -645,9 +520,9 @@ class MoveUseCase:
 
     def rat(self, state: PlayerState) -> str:
         cheap = [sid for sid in state.bag if not self.game.items[sid].value]
-        if not cheap or random.random() >= RAT_CHANCE:
+        if not cheap or self.game.rng.random() >= RAT_CHANCE:
             return ""
-        stolen = random.choice(cheap)
+        stolen = self.game.rng.choice(cheap)
         state.bag.remove(stolen)
         self.game.places[TUBE_TUNNEL].items.append(stolen)
         return f"A RAT RUNS OFF WITH YOUR {self.game.items[stolen].name}."
@@ -733,6 +608,57 @@ class UseItemUseCase:
         return "NOTHING HAPPENS."
 
 
+class LegacyPickupUseCase:
+    """Mobile client v1 still calls this route. Do not remove it (decision 0003)."""
+
+    def __init__(self, game: InMemoryGame) -> None:
+        self.game = game
+
+    def execute(self, player_sid: str, item_sid: str) -> str:
+        state = self.game.player(player_sid)
+        self.game.item(item_sid)
+        here = self.game.places[state.location]
+        if item_sid in here.items:
+            here.items.remove(item_sid)
+            state.bag.append(item_sid)
+        return "OK"
+
+
+class SendMessageUseCase:
+    def __init__(self, game: InMemoryGame) -> None:
+        self.game = game
+
+    def execute(self, player_sid: str, text: str) -> str:
+        state = self.game.player(player_sid)
+        self.game.chat.append(
+            ChatMessage(location=state.location, name=state.name, text=text, at=now_iso())
+        )
+        state.moves += 1
+        return "SENT."
+
+
+class ReadMessagesUseCase:
+    def __init__(self, game: InMemoryGame) -> None:
+        self.game = game
+
+    def execute(self, player_sid: str) -> list[kata.ChatMessage]:
+        state = self.game.player(player_sid)
+        return [
+            kata.ChatMessage(name=message.name, text=message.text, at=message.at)
+            for message in self.game.chat
+            if message.location == state.location
+        ]
+
+
+class LeaderboardUseCase:
+    def __init__(self, game: InMemoryGame) -> None:
+        self.game = game
+
+    def execute(self) -> list[FinishedGame]:
+        ranked = sorted(self.game.finished_games, key=lambda entry: -entry["score"])
+        return [FinishedGame(**entry) for entry in ranked]
+
+
 class SaveGameUseCase:
     """The SaveGame port. INC-3110: a laptop sleep lost every bag."""
 
@@ -741,35 +667,8 @@ class SaveGameUseCase:
 
     def execute(self, player_sid: str) -> str:
         state = self.game.player(player_sid)
-        payload = {
-            "location": state.location,
-            "bag": list(state.bag),
-            "gold": state.gold,
-            "energy": state.energy,
-            "moves": state.moves,
-            "visited": sorted(state.visited),
-            "opened": sorted(state.opened),
-            "has_won": state.has_won,
-        }
         # 2023: the payload also holds the energy and the move count.
-        path = save_path()
-        connection = sqlite3.connect(path)
-        try:
-            connection.execute(SAVE_SCHEMA)
-            connection.execute(
-                "INSERT OR REPLACE INTO saves"
-                " (player_sid, name, payload, saved_at) VALUES (?, ?, ?, ?)",
-                (
-                    state.sid,
-                    state.name,
-                    json.dumps(payload),
-                    datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                ),
-            )
-            connection.commit()
-        finally:
-            connection.close()
-        return path
+        return self.game.save_store.write_save(state.sid, state.name, to_payload(state))
 
 
 class RegisterAccountUseCase:
@@ -788,7 +687,7 @@ class RegisterAccountUseCase:
             raise InvalidName("THIS NAME IS RESERVED.")
         account = Account(email=email, password_hash=password_hash(password), name=name)
         self.game.accounts[email] = account
-        write_account(account)
+        self.game.account_store.write_account(account)
         return account
 
 
@@ -807,18 +706,7 @@ class LoginUseCase:
             sid = account.player_sid or game.new_sid()
             if sid not in game.players and len(game.players) >= MAX_PLAYERS:
                 raise NotAllowed("THE KATACOMBS ARE FULL. TRY AGAIN LATER.")
-            state = PlayerState(
-                sid=sid,
-                name=account.name,
-                location=data["location"],
-                bag=list(data["bag"]),
-                gold=data["gold"],
-                energy=data["energy"],
-                moves=data["moves"],
-                visited=set(data["visited"]),
-                opened=set(data["opened"]),
-                has_won=data["has_won"],
-            )
+            state = from_payload(sid, account.name, data)
             game.players[sid] = state
         elif account.player_sid in game.players:
             state = game.players[account.player_sid]
@@ -826,5 +714,5 @@ class LoginUseCase:
             player = RegisterPlayerUseCase(game).execute(account.name)
             state = game.players[player.sid]
         account.player_sid = state.sid
-        write_account(account)
+        game.account_store.write_account(account)
         return game.to_player(state)

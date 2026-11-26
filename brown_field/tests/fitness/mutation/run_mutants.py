@@ -27,6 +27,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]
 G, A = "brown_field/game.py", "brown_field/api.py"
+ST, DB, HS, SY = "brown_field/core/state.py", "brown_field/adapters/sqlite_store.py", "brown_field/adapters/highscores.py", "brown_field/adapters/system.py"
 
 # (file, old text, new text, label). Each old text must occur exactly once.
 MUTANTS = [
@@ -36,15 +37,15 @@ MUTANTS = [
     (G, "NAME_MAX_LENGTH = 50", "NAME_MAX_LENGTH = 49", "name max 50 -> 49"),
     (G, "MAX_PLAYERS = 20", "MAX_PLAYERS = 21", "max players 20 -> 21"),
     (G, 'RESERVED_NAMES = {"ADMIN"}', "RESERVED_NAMES = set()", "no reserved names"),
-    (G, "START_ENERGY = 12", "START_ENERGY = 13", "start energy 12 -> 13"),
+    (ST, "START_ENERGY = 12", "START_ENERGY = 13", "start energy 12 -> 13"),
     (G, "MAX_ENERGY = 20", "MAX_ENERGY = 21", "max energy 20 -> 21"),
     (G, "RAT_CHANCE = 0.2", "RAT_CHANCE = 0.3", "rat chance 0.2 -> 0.3"),
     (G, "RAT_CHANCE = 0.2", "RAT_CHANCE = 0.1", "rat chance 0.2 -> 0.1"),
     (G, '"BREAD": 5', '"BREAD": 4', "bread energy 5 -> 4"),
     (G, '"BEER": 3}', '"BEER": 4}', "beer energy 3 -> 4"),
-    (G, "datetime.now().minute >= 50", "datetime.now().minute >= 51", "market closes at 51"),
-    (G, "datetime.now().minute >= 50", "datetime.now(timezone.utc).minute >= 50", "market reads UTC"),
-    (G, 'os.environ.get("KATACOMBS_DB", "katacombs.db")', 'os.environ.get("KATACOMBS_DB", "game.db")', "default database file name"),
+    (G, "now.minute >= 50", "now.minute >= 51", "market closes at 51"),
+    (SY, "return datetime.now()", "return datetime.utcnow()", "market reads UTC"),
+    (DB, 'os.environ.get("KATACOMBS_DB", "katacombs.db")', 'os.environ.get("KATACOMBS_DB", "game.db")', "default database file name"),
     (G, "hashlib.sha256(password", "hashlib.sha3_256(password", "password hash sha256 -> sha3"),
     (G, "                # The world changed under an old save.\n                continue", "                pass", "old save at an unknown location loads"),
     (G, 'f"{place.description} {note}".strip()', 'f"{place.description} {note}"', "description keeps a trailing space"),
@@ -62,15 +63,15 @@ MUTANTS = [
     (G, '"NOTHING HAPPENS."', '"NOTHING HAPPENED."', "nothing-happens message"),
     (G, "state.energy = min(MAX_ENERGY, state.energy + ENERGY_FROM[item.name])", "state.energy = state.energy + ENERGY_FROM[item.name]", "no energy cap"),
     (G, "                game.disconnect(BACK_YARD, Direction.DOWN)", "                pass", "closing the manhole keeps the exit"),
-    (G, '"at": datetime.now(timezone.utc).isoformat(timespec="seconds"),\n    }\n    with open', '"at": datetime.now(timezone.utc).isoformat(),\n    }\n    with open', "high-score time with microseconds"),
+    (HS, '"at": datetime.now(timezone.utc).isoformat(timespec="seconds"),\n        }\n        with open', '"at": datetime.now(timezone.utc).isoformat(),\n        }\n        with open', "high-score time with microseconds"),
     (G, "if sid not in self.players and sid not in self.items:", "if True:", "sid collision check removed"),
     (G, "if (place.title, direction) in ONE_WAY:\n                continue", "if True:\n                continue", "world check disabled"),
     (G, "            if account.player_sid == player_sid:\n                return account", "            if account.player_sid:\n                return account", "a quit finds the first account with a player"),
-    (G, "ORDER BY saved_at", "ORDER BY player_sid", "saves load in sid order"),
-    (A, '        state.moves += 1\n        return {"message": "SENT."}', '        return {"message": "SENT."}', "chat does not count a move"),
-    (A, "if message.location == state.location", "if True", "chat shows every location"),
-    (A, "if state is not None and state.energy <= 0:", "if state is not None and state.energy < 0:", "energy gate at -1"),
-    (A, "            here.items.remove(item_sid)\n            state.bag.append(item_sid)", "            here.items.remove(item_sid)\n            state.bag.append(item_sid)\n            state.moves += 1", "legacy pickup counts a move"),
+    (DB, "ORDER BY saved_at", "ORDER BY player_sid", "saves load in sid order"),
+    (G, '        state.moves += 1\n        return "SENT."', '        return "SENT."', "chat does not count a move"),
+    (G, "if message.location == state.location", "if True", "chat shows every location"),
+    (G, "if state.energy <= 0:", "if state.energy < 0:", "energy gate at -1"),
+    (G, '            state.bag.append(item_sid)\n        return "OK"', '            state.bag.append(item_sid)\n            state.moves += 1\n        return "OK"', "legacy pickup counts a move"),
     (A, "return error(500, str(exc))", "return error(400, str(exc))", "unknown error status 500 -> 400"),
     (A, 'return error(400, "INVALID REQUEST.")', 'return error(422, "INVALID REQUEST.")', "malformed request 400 -> 422"),
 ]
