@@ -4,33 +4,19 @@ Each one takes the game as its only argument (decision 0008) and reaches the
 outside only through the ports that the game holds.
 """
 
-from ..domain.constants import (
-    BACK_YARD,
-    BAG_SLOTS,
-    CELLAR,
-    ENERGY_FROM,
-    KATACOMBS,
-    KEY,
-    MANHOLE,
-    MARKET,
-    MAX_ENERGY,
-    MAX_PLAYERS,
-    NAME_MAX_LENGTH,
-    RAT_CHANCE,
-    RESERVED_NAMES,
-    TUBE_TUNNEL,
-)
-from ..domain.errors import InvalidName, ItemNotFound, NotAllowed
+from ..domain.constants import CELLAR, MARKET, MAX_PLAYERS, TUBE_TUNNEL
+from ..domain.errors import ItemNotFound, NotAllowed
+from ..domain.names import check_email, player_name
+from ..domain.player import PlayerState
 from ..kata import AccountView, Action, Bag, ChatLine, Direction, FinishedGame, Item, Location, Player
 from .ports_out import SavedPlayer
 from .state import (
     Account,
-    GameState,
-    PlayerState,
     ChatMessage,
+    GameState,
     market_is_cleaning,
     password_hash,
-    slots_used,
+    player_from_payload,
     snapshot_of,
 )
 
@@ -40,15 +26,11 @@ class RegisterPlayerUseCase:
         self.game = game
 
     def execute(self, name: str) -> Player:
-        name = name.strip().upper()
-        if not 1 <= len(name) <= NAME_MAX_LENGTH:
-            raise InvalidName(f"THE NAME MUST HAVE 1 TO {NAME_MAX_LENGTH} CHARACTERS.")
-        if name in RESERVED_NAMES:
-            raise InvalidName("THIS NAME IS RESERVED.")
+        name = player_name(name)
         if len(self.game.players) >= MAX_PLAYERS:
             raise NotAllowed("THE KATACOMBS ARE FULL. TRY AGAIN LATER.")
         state = PlayerState(sid=self.game.new_sid(), name=name, location=self.game.start)
-        self.game.visit(state, self.game.start)
+        state.visit(self.game.places[self.game.start])
         self.game.players[state.sid] = state
         return self.game.to_player(state)
 
@@ -118,22 +100,19 @@ class MoveUseCase:
     def execute(self, player_sid: str, direction: Direction) -> Location:
         game = self.game
         state = game.player(player_sid)
-        if state.has_won:
-            raise NotAllowed("THE GAME IS OVER. YOU ALREADY FOUND THE EXIT.")
+        state.ensure_playing()
         exits = game.places[state.location].exits
         if direction not in exits:
             raise NotAllowed("YOU CAN'T GO THAT WAY.")
         target = exits[direction]
         if target == MARKET and market_is_cleaning(game.clock):
             raise NotAllowed("THE MARKET IS CLOSED FOR CLEANING. COME BACK LATER.")
-        state.energy -= 1
-        state.moves += 1
-        game.visit(state, target)
+        state.walk_to(game.places[target])
         note = ""
         if target == CELLAR:
             note = self.rat(state)
         if game.places[state.location].is_exit:
-            state.has_won = True
+            state.win()
             score = game.to_bag(state).score
             game.high_scores.append(state.name, score, game.clock.now())
             game.finished_games.append(
@@ -142,13 +121,12 @@ class MoveUseCase:
         return game.to_location(state.location, note)
 
     def rat(self, state: PlayerState) -> str:
-        cheap = [sid for sid in state.bag if not self.game.items[sid].value]
-        if not cheap or self.game.random_source.chance() >= RAT_CHANCE:
+        game = self.game
+        stolen = state.lose_to_the_rat(game.items, game.random_source.chance, game.random_source.choice)
+        if stolen is None:
             return ""
-        stolen = self.game.random_source.choice(cheap)
-        state.bag.remove(stolen)
-        self.game.places[TUBE_TUNNEL].items.append(stolen)
-        return f"A RAT RUNS OFF WITH YOUR {self.game.items[stolen].name}."
+        game.places[TUBE_TUNNEL].items.append(stolen)
+        return f"A RAT RUNS OFF WITH YOUR {game.items[stolen].name}."
 
 
 class UseItemUseCase:
@@ -159,76 +137,39 @@ class UseItemUseCase:
         game = self.game
         state = game.player(player_sid)
         item = game.item(item_sid)
-        if state.has_won:
-            raise NotAllowed("THE GAME IS OVER. YOU ALREADY FOUND THE EXIT.")
+        state.ensure_playing()
 
+        # The order of these checks decides the message a player sees.
         here = game.places[state.location]
-        in_bag = item_sid in state.bag
-        if not in_bag and item_sid not in here.items:
+        if item_sid not in state.bag and item_sid not in here.items:
             raise ItemNotFound(f"THERE IS NO {item.name} HERE.")
         if action not in item.actions:
             raise NotAllowed(f"YOU CAN'T {action.value.upper()} THE {item.name}.")
 
-        state.moves += 1
+        state.count_command()
 
         if action == Action.PICK:
-            if in_bag:
-                # Do not remove. INC-2231: the mobile client sends TAKE again
-                # when the network is slow, and players saw an error.
-                return "TAKEN."
-            if slots_used(game.names_in_bag(state) + [item.name]) > BAG_SLOTS:
-                raise NotAllowed("YOUR BAG IS FULL.")
-            here.items.remove(item_sid)
-            state.bag.append(item_sid)
-            return "TAKEN."
+            return state.take(item, here, game.names_in_bag(state))
 
         if action == Action.DROP:
-            if not in_bag:
-                raise NotAllowed(f"YOU ARE NOT CARRYING THE {item.name}.")
-            state.bag.remove(item_sid)
-            here.items.append(item_sid)
-            return "DROPPED."
+            return state.drop(item, here)
 
         if action == Action.OPEN:
-            if item_sid in game.open_items:
-                raise NotAllowed(f"THE {item.name} IS ALREADY OPEN.")
-            if item_sid in game.locked_items:
-                raise NotAllowed(f"THE {item.name} IS LOCKED.")
-            game.open_items.add(item_sid)
-            if item_sid == MANHOLE:
-                game.connect(BACK_YARD, Direction.DOWN, KATACOMBS)
-            message = "OPENED."
-            if item_sid not in state.opened:
-                state.opened.add(item_sid)
-                gold = game.gold_inside.get(item_sid, 0)
-                if gold:
-                    state.gold += gold
-                    message += f" YOU FIND {gold} GOLD."
-            return message
+            game.world.open(item)
+            gold = state.first_open(item_sid, game.world.gold_inside.get(item_sid, 0))
+            return f"OPENED. YOU FIND {gold} GOLD." if gold else "OPENED."
 
         if action == Action.CLOSE:
-            if item_sid not in game.open_items:
-                raise NotAllowed(f"THE {item.name} IS ALREADY CLOSED.")
-            game.open_items.remove(item_sid)
-            if item_sid == MANHOLE:
-                game.disconnect(BACK_YARD, Direction.DOWN)
+            game.world.close(item)
             return "CLOSED."
 
         # Action.USE
-        if not in_bag:
-            raise NotAllowed(f"YOU ARE NOT CARRYING THE {item.name}.")
-        if item_sid == KEY and state.location == BACK_YARD:
-            if MANHOLE not in game.locked_items:
-                return "THE MANHOLE COVER IS ALREADY UNLOCKED."
-            game.locked_items.remove(MANHOLE)
-            return "YOU UNLOCK THE MANHOLE COVER."
-        if item.name in ENERGY_FROM:
-            state.bag.remove(item_sid)
-            state.energy = min(MAX_ENERGY, state.energy + ENERGY_FROM[item.name])
-            if item.name == "BEER":
-                return "YOU DRINK THE BEER. YOU FEEL BRAVE."
-            return "YOU EAT THE BREAD. YOU FEEL STRONGER."
-        return "NOTHING HAPPENS."
+        state.ensure_carrying(item)
+        return (
+            game.world.use_key(item_sid, state.location)
+            or state.eat_or_drink(item)
+            or "NOTHING HAPPENS."
+        )
 
 
 class SaveGameUseCase:
@@ -249,15 +190,10 @@ class RegisterAccountUseCase:
         self.game = game
 
     def execute(self, email: str, password: str, name: str) -> AccountView:
-        if "@" not in email:
-            raise InvalidName("THE EMAIL IS NOT VALID.")
+        check_email(email)
         if email in self.game.accounts:
             raise NotAllowed("THIS EMAIL IS TAKEN.")
-        name = name.strip().upper()
-        if not 1 <= len(name) <= NAME_MAX_LENGTH:
-            raise InvalidName(f"THE NAME MUST HAVE 1 TO {NAME_MAX_LENGTH} CHARACTERS.")
-        if name in RESERVED_NAMES:
-            raise InvalidName("THIS NAME IS RESERVED.")
+        name = player_name(name)
         account = Account(email=email, password_hash=password_hash(password), name=name)
         self.game.accounts[email] = account
         self.game.account_store.put(account)
@@ -280,18 +216,7 @@ class LoginUseCase:
             sid = account.player_sid or game.new_sid()
             if sid not in game.players and len(game.players) >= MAX_PLAYERS:
                 raise NotAllowed("THE KATACOMBS ARE FULL. TRY AGAIN LATER.")
-            state = PlayerState(
-                sid=sid,
-                name=account.name,
-                location=data["location"],
-                bag=list(data["bag"]),
-                gold=data["gold"],
-                energy=data["energy"],
-                moves=data["moves"],
-                visited=set(data["visited"]),
-                opened=set(data["opened"]),
-                has_won=data["has_won"],
-            )
+            state = player_from_payload(sid, account.name, data)
             game.players[sid] = state
         elif account.player_sid in game.players:
             state = game.players[account.player_sid]
@@ -314,7 +239,7 @@ class SendMessageUseCase:
         self.game.chat.append(
             ChatMessage(location=state.location, name=state.name, text=text, at=self.game.now_iso())
         )
-        state.moves += 1
+        state.count_command()
         return "SENT."
 
 

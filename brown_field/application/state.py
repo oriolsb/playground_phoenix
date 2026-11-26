@@ -6,15 +6,13 @@ ports and the state, and each use case reads both from it. `InMemoryGame` in
 """
 
 import hashlib
-import math
-from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import timezone
 
-from ..domain.constants import ITEMS_PER_SLOT, OPPOSITE, START_ENERGY
-from ..domain.world import Place, check_world
+from ..domain.player import PlayerState
+from ..domain.world import Place, World
 from ..domain.errors import ItemNotFound, PlayerNotFound
-from ..kata import Bag, Direction, Item, Location, Player
+from ..kata import Bag, Item, Location, Player
 from .ports_out import (
     AccountStore,
     Clock,
@@ -24,20 +22,6 @@ from .ports_out import (
     StoredAccount,
     WorldSource,
 )
-
-
-@dataclass
-class PlayerState:
-    sid: str
-    name: str
-    location: str
-    bag: list[str] = field(default_factory=list)
-    gold: int = 0
-    energy: int = START_ENERGY
-    moves: int = 0
-    visited: set[str] = field(default_factory=set)
-    opened: set[str] = field(default_factory=set)
-    has_won: bool = False
 
 
 # An account, as the game and the store keep it (decision 0014).
@@ -57,13 +41,29 @@ def market_is_cleaning(clock: Clock) -> bool:
     return clock.now().minute >= 50
 
 
-def slots_used(names: list[str]) -> int:
-    return sum(math.ceil(count / ITEMS_PER_SLOT) for count in Counter(names).values())
-
-
 def password_hash(password: str) -> str:
     # TODO: bcrypt (2023)
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
+
+
+def player_from_payload(sid: str, name: str, data: dict) -> PlayerState:
+    """A player from a save or a snapshot (player-state.schema.json).
+
+    A payload from before 2023 has no energy: the `KeyError` stops the start,
+    as SAVE-2 records.
+    """
+    return PlayerState(
+        sid=sid,
+        name=name,
+        location=data["location"],
+        bag=list(data["bag"]),
+        gold=data["gold"],
+        energy=data["energy"],
+        moves=data["moves"],
+        visited=set(data["visited"]),
+        opened=set(data["opened"]),
+        has_won=data["has_won"],
+    )
 
 
 def snapshot_of(state: "PlayerState") -> dict:
@@ -100,21 +100,28 @@ class GameState:
         self.high_scores = high_scores
         self.save_store = saves
         self.account_store = accounts
-        # The fixed world, a fresh copy for this game (decision 0016).
-        data = world.load()
-        check_world(list(data.places), data.places, data.one_way)
-        self.start = data.start
-        self.places = data.places
-        self.items = data.items
-        self.gold_inside = data.gold_inside
-        self.open_items: set[str] = set()
-        self.locked_items: set[str] = set(data.locked)
+        # The fixed world, a fresh copy for this game (decisions 0016, 0017).
+        self.world = World(world.load())
         self.players: dict[str, PlayerState] = {}
         self.finished_games: list[dict] = []
         self.accounts: dict[str, Account] = {}
         self.chat: list[ChatMessage] = []
         self.load_saves()
         self.load_accounts()
+
+    # The world, read through `self.world` (decision 0017). These names stay
+    # for the code and the tests that read them.
+    @property
+    def start(self) -> str:
+        return self.world.start
+
+    @property
+    def places(self) -> dict[str, Place]:
+        return self.world.places
+
+    @property
+    def items(self) -> dict[str, Item]:
+        return self.world.items
 
     def load_accounts(self) -> None:
         for account in self.account_store.load_all():
@@ -134,18 +141,7 @@ class GameState:
             if data["location"] not in self.places:
                 # The world changed under an old save.
                 continue
-            self.players[sid] = PlayerState(
-                sid=sid,
-                name=name,
-                location=data["location"],
-                bag=list(data["bag"]),
-                gold=data["gold"],
-                energy=data["energy"],
-                moves=data["moves"],
-                visited=set(data["visited"]),
-                opened=set(data["opened"]),
-                has_won=data["has_won"],
-            )
+            self.players[sid] = player_from_payload(sid, name, data)
 
     def now_iso(self) -> str:
         return self.clock.now().astimezone(timezone.utc).isoformat(timespec="seconds")
@@ -169,20 +165,6 @@ class GameState:
         if sid not in self.items:
             raise ItemNotFound(f"ITEM {sid} NOT FOUND.")
         return self.items[sid]
-
-    def visit(self, state: PlayerState, title: str) -> None:
-        state.location = title
-        if title not in state.visited:
-            state.visited.add(title)
-            state.gold += self.places[title].gold
-
-    def connect(self, a: str, direction: Direction, b: str) -> None:
-        self.places[a].exits[direction] = b
-        self.places[b].exits[OPPOSITE[direction]] = a
-
-    def disconnect(self, a: str, direction: Direction) -> None:
-        b = self.places[a].exits.pop(direction)
-        self.places[b].exits.pop(OPPOSITE[direction])
 
     def names_in_bag(self, state: PlayerState) -> list[str]:
         return [self.items[sid].name for sid in state.bag]
