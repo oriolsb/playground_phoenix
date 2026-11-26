@@ -126,7 +126,7 @@ Tests find each control by its role and accessible name.
 
 #### WEB-MOVE-2 — Every GO button is disabled at energy 1 or below
 
-- Status: contested. Open question: The client stops at energy 1, the server at 0 (MOVE-5). Which is the limit?
+- Status: contested. Open question: The client stops at energy 1, the server at 0 (MOVE-5). Which is the limit? Decision 0011 proposes 0 on the server, and leaves the client's choice to its owner.
 - Source: legacy client (App.tsx:185, "Do not let a player get stuck at 0."). The server refuses only at 0 (MOVE-5).
 - Rule: While the bag shows an energy of 1 or less, or the bag has not
   loaded, the client shall disable every GO button.

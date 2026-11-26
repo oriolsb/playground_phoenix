@@ -291,7 +291,7 @@ assessment); that is an internal finding, not a boundary one.
 
 #### MOVE-5 — A player with no energy can't move
 
-- Status: contested. Open question: The gate is in the REST route only: the move port lets the energy go below 0, and the client stops at 1 (WEB-MOVE-2). Where does the rule belong, and is the limit 0 or 1?
+- Status: contested. Open question: The gate is in the REST route only: the move port lets the energy go below 0, and the client stops at 1 (WEB-MOVE-2). Where does the rule belong, and is the limit 0 or 1? A proposed answer, for the group: decision 0011 (the port, at 0).
 - Source: legacy code (api.py:210-213, "Added for the mobile release").
 - Rule: If a player with an energy of 0 or less moves, then Katacombs shall
   refuse the move.
