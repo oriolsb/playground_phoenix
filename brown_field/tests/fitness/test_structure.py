@@ -75,3 +75,19 @@ def the_check_reads_the_literals(source):
 def no_item_sid(literals):
     sids = [text for text in literals if re.fullmatch(r"\d{6}-\d{12}-\d{8}", text)]
     assert not sids, f"item sids in the rules: {sids} (WORLD-3)"
+
+
+@then("it imports nothing from the adapters")
+def no_adapter(tree):
+    found = [n.lineno for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) and (n.module or "").split(".")[0] == "adapters"]
+    assert not found, f"imports an adapter at lines {found} (ENTRY-6)"
+
+
+@when(parsers.parse('the check counts the lines of "{source}"'), target_fixture="count")
+def the_check_counts(source):
+    return len((ROOT / source).read_text(encoding="utf-8").splitlines())
+
+
+@then(parsers.parse("it has at most {limit:d} lines"))
+def at_most(count, limit):
+    assert count <= limit, f"{count} lines; split the module (decision 0012)"

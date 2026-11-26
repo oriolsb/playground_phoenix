@@ -15,15 +15,26 @@ Feature: The structure of decision 0012, checked on the code
     Then the check finds 1 read of the game
 
   @ENTRY-6
-  Scenario Outline: The rules do no I/O: <source>
+  Scenario Outline: The rules do no I/O and know no adapter: <source>
     When the check reads the imports and calls of "<source>"
     Then it imports none of "sqlite3, os, fastapi" and never calls open
+    And it imports nothing from the adapters
 
     Examples:
-      | source         |
-      | game.py        |
-      | core/state.py  |
-      | core/ports.py  |
+      | source             |
+      | core/accounts.py   |
+      | core/chat.py       |
+      | core/errors.py     |
+      | core/game.py       |
+      | core/items.py      |
+      | core/looking.py    |
+      | core/movement.py   |
+      | core/players.py    |
+      | core/ports.py      |
+      | core/saving.py     |
+      | core/state.py      |
+      | core/winning.py    |
+      | core/world.py      |
 
   @WORLD-3
   Scenario Outline: The rules name no item: <source>
@@ -31,6 +42,37 @@ Feature: The structure of decision 0012, checked on the code
     Then none of them is an item sid
 
     Examples:
-      | source        |
-      | game.py       |
-      | core/world.py |
+      | source             |
+      | core/accounts.py   |
+      | core/chat.py       |
+      | core/errors.py     |
+      | core/game.py       |
+      | core/items.py      |
+      | core/looking.py    |
+      | core/movement.py   |
+      | core/players.py    |
+      | core/ports.py      |
+      | core/saving.py     |
+      | core/state.py      |
+      | core/winning.py    |
+      | core/world.py      |
+
+  Scenario Outline: A module of the rules stays small: <source>
+    When the check counts the lines of "<source>"
+    Then it has at most 300 lines
+
+    Examples:
+      | source             |
+      | core/accounts.py   |
+      | core/chat.py       |
+      | core/errors.py     |
+      | core/game.py       |
+      | core/items.py      |
+      | core/looking.py    |
+      | core/movement.py   |
+      | core/players.py    |
+      | core/ports.py      |
+      | core/saving.py     |
+      | core/state.py      |
+      | core/winning.py    |
+      | core/world.py      |
