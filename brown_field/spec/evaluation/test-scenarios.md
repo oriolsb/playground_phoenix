@@ -8,7 +8,7 @@ today, and passes against it (2026-11-25).
 
 Command of the canonical run: `uv run pytest brown_field/tests`.
 
-Approved:
+Approved: Xavier, 2026-11-26, suite sha256:56287b80508dbae3
 
 Do not type this line by hand. After the review, a person runs
 `python3 phoenix-kit/scripts/phoenix_check.py approval stamp --by "<who>"`.
