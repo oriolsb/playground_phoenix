@@ -8,7 +8,7 @@ delta merges into the specification and this file moves to the archive.
 
 #### ENTRY-3 — Every command has a port
 
-- Status: proposed (decision 0012).
+- Status: accepted (decision 0012). Decided by change modular-core.
 - Source: change modular-core; the need: every adapter gets the same
   rules. Today chat, the leaderboard and the legacy pickup exist only as
   REST routes (api.py:139-141, api.py:165-182, api.py:187-197).
@@ -28,7 +28,7 @@ delta merges into the specification and this file moves to the archive.
 
 #### ENTRY-4 — A REST route adds no rule to its port
 
-- Status: proposed (decision 0012).
+- Status: accepted (decision 0012). Decided by change modular-core.
 - Source: change modular-core; api.py:166-173, api.py:188-197,
   api.py:210-213 hold rules today.
 - Rule: When a client calls a REST route, Katacombs shall answer what the
@@ -43,7 +43,7 @@ delta merges into the specification and this file moves to the archive.
 
 #### ENTRY-5 — The ports show the energy
 
-- Status: proposed (decision 0012).
+- Status: accepted (decision 0012). Decided by change modular-core.
 - Source: change modular-core; api.py:123-124 and api.py:149-150 add the
   energy that the domain types of kata.py don't carry.
 - Rule: When a use case answers a Player or a Bag, Katacombs shall
@@ -56,7 +56,7 @@ delta merges into the specification and this file moves to the archive.
 
 #### ENTRY-6 — A game reads and writes its data through the stores it is given
 
-- Status: proposed (decision 0012).
+- Status: accepted (decision 0012). Decided by change modular-core.
 - Source: change modular-core; game.py:326-335, game.py:386-403,
   game.py:421-478, game.py:742-772 open the files from inside the rules.
 - Rule: Where code builds `InMemoryGame` with a save store, an account
@@ -75,7 +75,7 @@ delta merges into the specification and this file moves to the archive.
 
 #### ENTRY-7 — A game reads the time and the chance from the sources it is given
 
-- Status: proposed (decision 0012).
+- Status: accepted (decision 0012). Decided by change modular-core.
 - Source: change modular-core; game.py:316-319, game.py:480-488,
   game.py:646-654; the stdlib seams of decision 0008.
 - Rule: Where code builds `InMemoryGame` with a clock or a random source,
@@ -92,7 +92,7 @@ delta merges into the specification and this file moves to the archive.
 
 #### WORLD-3 — The world file is the one definition of the world
 
-- Status: proposed (decision 0012).
+- Status: accepted (decision 0012). Decided by change modular-core.
 - Source: change modular-core; game.py:34-69 and game.py:135-301 build
   the same world that `brown_field/spec/world.json` describes.
 - Rule: When a game starts with no world given, Katacombs shall build the
@@ -112,7 +112,7 @@ delta merges into the specification and this file moves to the archive.
 
 #### MOVE-5 — A player with no energy can't move
 
-- Status: accepted (decisions 0011 and 0012).
+- Status: accepted (decision 0011; the move into the port, decision 0012).
 - Source: legacy code (api.py:210-213, "Added for the mobile release"),
   revised by change modular-core.
 - Rule: If a player with an energy of 0 or less moves, then Katacombs shall
@@ -185,6 +185,11 @@ Planned, edited in place by `/phoenix-kit:contract` after the review:
 - `Player` and `Bag` get `energy: int`, `ENTRY-5`.
 - 4 new protocols: `SendMessage`, `ReadMessages`, `Leaderboard`,
   `LegacyPickup`, `ENTRY-3`.
+
+### Scope
+
+Scope: the game-server unit (`brown_field/game.py`, `api.py`, `kata.py`,
+and the packages `brown_field/core/` and `brown_field/adapters/`).
 
 ## Old values
 

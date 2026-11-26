@@ -79,6 +79,17 @@ package killed 14 more: the test-to-mutant mapping of mutmut depends on the
 folder. The run from the package root is the reference. Each survivor has
 its reason:
 
+That run is from before the change modular-core (2026-11-26), so the
+"Where" column names the functions of the old `game.py`. They now live in:
+- `build_places`, `check_connections`: `load_world`, `check_connections` in `core/world.py`;
+- `save_path`, `write_account`, `load_accounts`, `load_saves`, the SQL of `SaveGameUseCase`: `adapters/sqlite_store.py`;
+- `save_high_score`: `JsonlHighScores.append` in `adapters/highscores.py`;
+- `password_hash`: `core/accounts.py`; `new_sid`: `core/game.py`;
+- the use cases: their module in `core/` (decision 0012).
+
+mutmut has not run on the new layout yet. TODO: run it and replace these
+numbers.
+
 | Survivors | Where | Reason |
 | --- | --- | --- |
 | 12 | `SaveGameUseCase`, `write_account`, `load_accounts`, `load_saves` | Equivalent: an SQL keyword or name in another case. SQLite reads them the same. |

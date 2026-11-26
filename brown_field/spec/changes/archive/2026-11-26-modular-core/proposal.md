@@ -155,4 +155,4 @@ The `Units` row of `PHOENIX.md` gets the new modules at archive time.
 
 ## Decision record
 
-0012 (proposed): `brown_field/decisions/0012-the-rules-live-behind-the-ports.md`.
+0012 (accepted 2026-11-26): `brown_field/decisions/0012-the-rules-live-behind-the-ports.md`. Builds on 0011 (accepted 2026-11-26).

@@ -1,6 +1,6 @@
 # 0012 — The rules live behind the ports, the rest is adapters
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-26
 - **Need:** operational. The team that maintains game-server needs to add
   features we don't know yet, and each new adapter (a CLI, a queue, a v2
@@ -42,7 +42,7 @@ neither: `brown_field.game` keeps every name of 0008, and
 
 ## Decision
 
-**Proposed, for review:**
+**Accepted on 2026-11-26:**
 
 1. **Driving ports.** Every command has one use case (`ENTRY-3`). The
    REST adapter only maps HTTP to a use case and back (`ENTRY-4`). The
