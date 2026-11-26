@@ -10,13 +10,19 @@ from brown_field.game import (
     InMemoryGame,
     InspectBagUseCase,
     InspectItemUseCase,
+    LegacyPickupUseCase,
     ListPlayersUseCase,
+    LoginUseCase,
     LookAroundUseCase,
     LookInDirectionUseCase,
     MoveUseCase,
     QuitGameUseCase,
+    ReadMessagesUseCase,
+    RegisterAccountUseCase,
     RegisterPlayerUseCase,
     SaveGameUseCase,
+    SendMessageUseCase,
+    ShowLeaderboardUseCase,
     UseItemUseCase,
 )
 
@@ -32,3 +38,10 @@ def each_use_case_fits_its_port(game: InMemoryGame) -> None:
     look_in_direction: kata.LookInDirection = LookInDirectionUseCase(game)
     move: kata.Move = MoveUseCase(game)
     save_game: kata.SaveGame = SaveGameUseCase(game)
+    # Decision 0015 (ENTRY-3).
+    send_message: kata.SendMessage = SendMessageUseCase(game)
+    read_messages: kata.ReadMessages = ReadMessagesUseCase(game)
+    show_leaderboard: kata.ShowLeaderboard = ShowLeaderboardUseCase(game)
+    register_account: kata.RegisterAccount = RegisterAccountUseCase(game)
+    login: kata.Login = LoginUseCase(game)
+    legacy_pickup: kata.LegacyPickup = LegacyPickupUseCase(game)
