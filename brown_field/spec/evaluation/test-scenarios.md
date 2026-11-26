@@ -30,7 +30,7 @@ match, and a wrong password refused in any letter case.
 
 Command of the canonical run: `uv run pytest brown_field/tests`.
 
-Approved:
+Approved: oriolsb, 2026-11-26, suite sha256:e68c31970880ad25
 
 Do not type this line by hand. After the review, a person runs
 `python3 phoenix-kit/scripts/phoenix_check.py approval stamp --by "<who>"`.
