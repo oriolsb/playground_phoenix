@@ -116,7 +116,7 @@ fixes them in `openapi.yaml` and names each edit below.
 #### ACCOUNT-14 — A deleted account's wins stay, without its name
 
 - Status: accepted (decision 0013). Decided by change accounts.
-- Source: change accounts; the review answer of 2026-11-26: the wins are anonymized.
+- Source: change accounts; the review answer of 2026-11-26: the wins stay, named DELETED PLAYER.
 - Rule: When a client deletes an account, Katacombs shall show each win
   of the account on the leaderboard with the name `DELETED PLAYER`, with
   the same score and move count.
@@ -268,17 +268,40 @@ fixes them in `openapi.yaml` and names each edit below.
 | Profiles (SQLite table `profiles` in `KATACOMBS_DB`) | game-server (register, delete) | game-server (profile, start) |
 | Kept wins (SQLite table `wins` in `KATACOMBS_DB`) | game-server (win, change of name, delete) | game-server (profile, delete) |
 
+### Terms: Finished game (revised row)
+
+| Finished game | The record of a win: name, score, move count, and the profile sid of the winner's account, if any. | high score (for this idea), game result |
+
+### Data ownership: Leaderboard and Chat log (revised rows)
+
+| Leaderboard (in memory) | game-server (win; delete renames the account's wins) | clients through `GET /leaderboard` |
+| Chat log (in memory) | game-server (send; delete removes the account's player's messages) | clients through `GET /player/{playerSid}/chat` |
+
 ### Contract: brown_field/spec/openapi.yaml
 
-- To be written by `/phoenix-kit:contract`: `GET /profiles/{profileSid}`
-  (`ACCOUNT-8`, `ACCOUNT-9`, `ACCOUNT-16`), `PUT /accounts/name`
-  (`ACCOUNT-11`, `ACCOUNT-12`, `PLAYER-2`..`PLAYER-4`), `POST /accounts/delete`
-  (`ACCOUNT-12`..`ACCOUNT-14`); `profileSid` on `Account` (`ACCOUNT-1`),
-  on `FinishedGame` (`WIN-2`) and on the login answer (`ACCOUNT-4`, a new
-  schema `LoginResult`: Player plus `profileSid`); new schemas `Profile`
-  and `NameChange`. No backward compatibility for clients that reject
-  unknown fields (review, round 2);
-  `x-rules` of `/accounts` and `/accounts/login` gain `ACCOUNT-3`, `ACCOUNT-7`.
+Version 2.0.0. Edited in place by `/phoenix-kit:contract` on 2026-11-26.
+No backward compatibility for a client that rejects unknown keys.
+
+- New operation `readProfile`, `GET /profiles/{profileSid}`: 200 `Profile`,
+  404 `NotFound` (`ACCOUNT-8`, `ACCOUNT-9`, `ACCOUNT-10`, `ACCOUNT-16`).
+  New parameter `ProfileSid`.
+- New operation `changeAccountName`, `PUT /accounts/name`: body
+  `NameChange`, 200 `Account`, 400 `InvalidRequestOrValue`, 405
+  `NotAllowed` (`ACCOUNT-11`, `ACCOUNT-12`, `ACCOUNT-7`, `PLAYER-2` to
+  `PLAYER-4`, `API-1`, `API-2`).
+- New operation `deleteAccount`, `POST /accounts/delete`: body
+  `Credentials`, 200 `Message`, 400 `InvalidRequest`, 405 `NotAllowed`
+  (`ACCOUNT-13`, `ACCOUNT-14`, `ACCOUNT-12`, `ACCOUNT-7`, `API-1`, `API-2`).
+- `login`: 200 is now `LoginResult` (the keys of `PlayerWithEnergy`, plus
+  `profileSid`); `x-rules` gains `ACCOUNT-7` (`ACCOUNT-4`).
+- `readLeaderboard`: `x-rules` gains `ACCOUNT-14`.
+- `registerAccount`: `x-rules` gains `ACCOUNT-15`; the 201 `Account` carries `profileSid`.
+- Schema `Account`: `profileSid` required (`ACCOUNT-1`, `ACCOUNT-11`).
+- Schema `FinishedGame`: `profileSid` required, a `Sid` or null (`WIN-2`, `ACCOUNT-14`).
+- New schemas `LoginResult`, `Profile` (no email: `ACCOUNT-9`), `NameChange`.
+- Responses `NotFound` (+`ACCOUNT-16`) and `NotAllowed` (+`ACCOUNT-12`), and
+  the `Error` message description (+`ACCOUNT-16`), cite the new rules.
+- No new error reason, and no new status: `x-status-by-reason` is unchanged.
 
 ## Old values
 
@@ -299,7 +322,7 @@ fixes them in `openapi.yaml` and names each edit below.
 - `STORE-3`: the password digest stays as it is, unsalted (still contested).
 - `WIN-3`: each win still appends one line in the schema's format, and
   nothing rewrites the file (decision 0002; no marketing support here).
-- `BOARD-1`: the ranking order stays; an anonymized win keeps its rank.
+- `BOARD-1`: the ranking order stays; a win named DELETED PLAYER keeps its rank.
 - `PLAYER-2`, `PLAYER-3`: the name rules apply to a change of name as they are.
 - `PLAYER-7`, `PLAYER-8`: a quit still removes the player and leaves the bag.
 - `CHAT-1`, `CHAT-2`: chat messages keep the name they were sent with,

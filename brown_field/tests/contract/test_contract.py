@@ -155,6 +155,21 @@ def call_login(client):
     return client.post("/accounts/login", json={"email": "ana@example.org", "password": "pw"})
 
 
+def call_change_account_name(client):
+    client.post("/accounts", json={"email": "ana@example.org", "password": "pw", "name": "ana"})
+    return client.put("/accounts/name", json={"email": "ana@example.org", "password": "pw", "name": "bob"})
+
+
+def call_delete_account(client):
+    client.post("/accounts", json={"email": "ana@example.org", "password": "pw", "name": "ana"})
+    return client.post("/accounts/delete", json={"email": "ana@example.org", "password": "pw"})
+
+
+def call_read_profile(client):
+    answer = client.post("/accounts", json={"email": "ana@example.org", "password": "pw", "name": "ana"})
+    return client.get(f"/profiles/{answer.json()['profileSid']}")
+
+
 def call_send_chat_message(client):
     return client.post(f"/player/{start(client)}/chat", json={"text": "hello"})
 
@@ -199,6 +214,9 @@ SUCCESS_CALLS = {
     "saveGame": call_save_game,
     "registerAccount": call_register_account,
     "login": call_login,
+    "changeAccountName": call_change_account_name,
+    "deleteAccount": call_delete_account,
+    "readProfile": call_read_profile,
     "sendChatMessage": call_send_chat_message,
     "readChat": call_read_chat,
     "actOnItem": call_act_on_item,
@@ -321,7 +339,10 @@ def test_a_schema_rejects_a_drifted_shape(schema, broken):
 
 
 def test_each_cited_rule_exists_in_the_specification():
+    """The specification, and the delta of each open change (spec/changes/<name>/delta.md)."""
     text = (SPEC / "specification.md").read_text(encoding="utf-8")
+    for delta in sorted((SPEC / "changes").glob("*/delta.md")):
+        text += "\n" + delta.read_text(encoding="utf-8")
     rule_ids = set(re.findall(r"^#{3,4} ([A-Z]+-\d+) — ", text, flags=re.MULTILINE))
     for operation_id, (_, _, operation) in operations().items():
         cited = operation.get("x-rules", [])

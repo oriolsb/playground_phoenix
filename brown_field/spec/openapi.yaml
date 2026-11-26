@@ -1,14 +1,17 @@
 openapi: 3.1.0
 info:
   title: Katacombs API
-  version: 1.0.0
+  version: 2.0.0
   description: >-
     The contract a caller of the game-server sees, recovered from the legacy
     code on 2026-11-25 (brown_field/api.py, brown_field/game.py). It records
     what the code does today. Each operation cites the rules it satisfies in
     x-rules (brown_field/spec/specification.md). The contract test
     (brown_field/tests/test_contract.py) validates a live response of each
-    operation against this file.
+    operation against this file. Version 2.0.0 (change accounts, 2026-11-26)
+    adds the profiles, the change of name and the deletion, and the key
+    `profileSid` to Account, FinishedGame and the login answer. It keeps no
+    backward compatibility for a client that rejects unknown keys.
 
 tags:
   - name: Game
@@ -80,7 +83,7 @@ paths:
       operationId: readLeaderboard
       tags: [Game]
       summary: The finished games since the server started, highest score first
-      x-rules: [BOARD-1, WIN-2]
+      x-rules: [BOARD-1, WIN-2, ACCOUNT-14]
       responses:
         "200":
           description: BOARD-1.
@@ -150,7 +153,7 @@ paths:
       operationId: registerAccount
       tags: [Accounts]
       summary: Register an account
-      x-rules: [ACCOUNT-1, ACCOUNT-2, ACCOUNT-3, PLAYER-2, PLAYER-3, PLAYER-4, API-1, API-2]
+      x-rules: [ACCOUNT-1, ACCOUNT-2, ACCOUNT-3, ACCOUNT-15, PLAYER-2, PLAYER-3, PLAYER-4, API-1, API-2]
       requestBody:
         required: true
         content:
@@ -174,7 +177,7 @@ paths:
       operationId: login
       tags: [Accounts]
       summary: Log in - the account's player
-      x-rules: [ACCOUNT-4, ACCOUNT-5, ACCOUNT-6, PLAYER-5, API-1, API-2]
+      x-rules: [ACCOUNT-4, ACCOUNT-5, ACCOUNT-6, ACCOUNT-7, PLAYER-5, API-1, API-2]
       requestBody:
         required: true
         content:
@@ -187,11 +190,77 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PlayerWithEnergy"
+                $ref: "#/components/schemas/LoginResult"
         "400":
           $ref: "#/components/responses/InvalidRequest"
         "405":
           $ref: "#/components/responses/NotAllowed"
+
+  /accounts/name:
+    put:
+      operationId: changeAccountName
+      tags: [Accounts]
+      summary: Change the name of an account, with its email and password
+      x-rules: [ACCOUNT-11, ACCOUNT-12, ACCOUNT-7, PLAYER-2, PLAYER-3, PLAYER-4, API-1, API-2]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NameChange"
+      responses:
+        "200":
+          description: ACCOUNT-11. The stored email, the new name, the profile sid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "400":
+          $ref: "#/components/responses/InvalidRequestOrValue"
+        "405":
+          $ref: "#/components/responses/NotAllowed"
+
+  /accounts/delete:
+    post:
+      operationId: deleteAccount
+      tags: [Accounts]
+      summary: Delete an account, with its email and password
+      x-rules: [ACCOUNT-13, ACCOUNT-14, ACCOUNT-12, ACCOUNT-7, API-1, API-2]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Credentials"
+      responses:
+        "200":
+          description: "ACCOUNT-13: `ACCOUNT DELETED.`"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "405":
+          $ref: "#/components/responses/NotAllowed"
+
+  /profiles/{profileSid}:
+    get:
+      operationId: readProfile
+      tags: [Accounts]
+      summary: The public profile of an account - no credential, no email
+      x-rules: [ACCOUNT-8, ACCOUNT-9, ACCOUNT-10, ACCOUNT-16]
+      parameters:
+        - $ref: "#/components/parameters/ProfileSid"
+      responses:
+        "200":
+          description: ACCOUNT-8.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /player/{playerSid}/chat:
     post:
@@ -405,6 +474,13 @@ components:
       description: An item sid. Any text is accepted; an unknown one is ITEM-2.
       schema:
         type: string
+    ProfileSid:
+      name: profileSid
+      in: path
+      required: true
+      description: A profile sid. Any text is accepted; an unknown one is ACCOUNT-16.
+      schema:
+        type: string
     DirectionParam:
       name: direction
       in: path
@@ -428,7 +504,7 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
     NotFound:
-      description: Reason NOT_FOUND (PLAYER-9, ITEM-2, ACT-1).
+      description: Reason NOT_FOUND (PLAYER-9, ITEM-2, ACT-1, ACCOUNT-16).
       content:
         application/json:
           schema:
@@ -437,7 +513,7 @@ components:
       description: >-
         Reason NOT_ALLOWED: a rule refuses the command in the present state
         (PLAYER-5, LOOK-3, MOVE-4 to MOVE-7, BAG-3, ACT-2, ACT-3, ACT-7,
-        ACT-9, ACT-10, ACT-12, ACCOUNT-3, ACCOUNT-5).
+        ACT-9, ACT-10, ACT-12, ACCOUNT-3, ACCOUNT-5, ACCOUNT-12).
       content:
         application/json:
           schema:
@@ -547,13 +623,61 @@ components:
         energy:
           type: integer
           maximum: 20
+    LoginResult:
+      description: >-
+        ACCOUNT-4. The account's player, with its energy, and the account's
+        profile sid. The same keys as PlayerWithEnergy, plus profileSid.
+      type: object
+      required: [sid, name, location, bag, hasWon, energy, profileSid]
+      additionalProperties: false
+      properties:
+        sid:
+          $ref: "#/components/schemas/Sid"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        location:
+          $ref: "#/components/schemas/Location"
+        bag:
+          $ref: "#/components/schemas/Bag"
+        hasWon:
+          type: boolean
+        energy:
+          type: integer
+          maximum: 20
+        profileSid:
+          $ref: "#/components/schemas/Sid"
+    Profile:
+      description: >-
+        ACCOUNT-8. The public view of an account. It has no email
+        (ACCOUNT-9), and needs no credential.
+      type: object
+      required: [profileSid, name, gamesWon, bestScore]
+      additionalProperties: false
+      properties:
+        profileSid:
+          $ref: "#/components/schemas/Sid"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        gamesWon:
+          type: integer
+          minimum: 0
+          description: The wins of the account's player since change accounts (ACCOUNT-10).
+        bestScore:
+          description: The highest score of those wins; null with no win.
+          type: [integer, "null"]
+          minimum: 0
     FinishedGame:
       type: object
-      required: [name, score, moves]
+      required: [name, score, moves, profileSid]
       additionalProperties: false
       properties:
         name:
           type: string
+          description: The name at the time of the win, or DELETED PLAYER (ACCOUNT-14).
         score:
           type: integer
           minimum: 0
@@ -561,15 +685,28 @@ components:
           type: integer
           minimum: 0
           description: The move count of the win.
+        profileSid:
+          description: >-
+            WIN-2. The profile sid of the winner's account; null for a player
+            with no account and for a deleted account (ACCOUNT-14).
+          anyOf:
+            - $ref: "#/components/schemas/Sid"
+            - type: "null"
     Account:
+      description: >-
+        The answer to the account's own registration (ACCOUNT-1) and change of
+        name (ACCOUNT-11). The only answers that hold an email (ACCOUNT-9).
       type: object
-      required: [email, name]
+      required: [email, name, profileSid]
       additionalProperties: false
       properties:
         email:
           type: string
+          description: The email as it was stored at registration.
         name:
           type: string
+        profileSid:
+          $ref: "#/components/schemas/Sid"
     ChatMessage:
       type: object
       required: [name, text, at]
@@ -623,6 +760,18 @@ components:
           type: string
         password:
           type: string
+    NameChange:
+      type: object
+      required: [email, password, name]
+      properties:
+        email:
+          type: string
+          description: Matched ignoring letter case (ACCOUNT-7).
+        password:
+          type: string
+        name:
+          type: string
+          description: The new name; the name rules apply (PLAYER-2 to PLAYER-4).
     NewChatMessage:
       type: object
       required: [text]
@@ -658,4 +807,4 @@ components:
           minLength: 1
           description: >-
             Upper case. Some messages hold a sid from the request as it was
-            sent (PLAYER-9, ITEM-2).
+            sent (PLAYER-9, ITEM-2, ACCOUNT-16).
