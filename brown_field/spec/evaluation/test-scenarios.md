@@ -108,6 +108,7 @@ Do not type this line by hand. After the review, a person runs
 | ARCH-7 | The domain imports nothing outside the domain | - | durable (structure) | `fitness/structure.feature` |
 | ARCH-8 | The REST adapter imports only the ports | - | durable (structure) | `fitness/structure.feature` |
 | ARCH-9 | The game state holds no rule and no mapping | - | durable (structure) | `fitness/structure.feature` |
+| ARCH-10 | A driven adapter imports only the outbound ports and the domain | - | durable (structure) | `fitness/structure.feature` |
 
 ## Operational limits and fitness functions
 

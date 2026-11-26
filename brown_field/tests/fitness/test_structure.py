@@ -306,6 +306,43 @@ def test_the_game_state_holds_no_rule_and_no_mapping():
     assert broken == [], broken
 
 
+def driven_adapter_breaks(source: str, parts: list[str], where: str) -> list[str]:
+    """Each import from brown_field in a driven adapter other than ports_out or the domain."""
+    allowed = {("application", "ports_out"), ("domain",)}
+    broken = []
+    for line, target in imported(ast.parse(source), parts, False):
+        if target[0] != "brown_field" or len(target) < 2:
+            continue
+        if tuple(target[1:3]) in allowed or target[1] == "domain":
+            continue
+        broken.append(f"{where}:{line}: a driven adapter imports {'.'.join(target)}")
+    return broken
+
+
+def test_driven_adapters_import_only_the_outbound_ports_and_the_domain():
+    """ARCH-10: modules under adapters/ outside rest/ import only ports_out and the domain."""
+    broken = []
+    for path in code_modules():
+        parts = module_name(path)
+        if parts[:2] != ["brown_field", "adapters"] or parts[2:3] == ["rest"] or len(parts) < 4:
+            continue
+        broken += driven_adapter_breaks(path.read_text(encoding="utf-8"), parts, str(path.relative_to(PACKAGE.parent)))
+    assert broken == [], "\n".join(broken)
+
+
+@pytest.mark.parametrize(
+    "source, expected",
+    [
+        ("from ...kata import Item\n", "imports brown_field.kata"),
+        ("from ...application.state import GameState\n", "imports brown_field.application.state"),
+    ],
+)
+def test_the_driven_adapter_check_sees_a_planted_break(source, expected):
+    """ARCH-10: a planted import fails the check, and names its line."""
+    found = driven_adapter_breaks(source, ["brown_field", "adapters", "files", "world_json"], "planted.py")
+    assert len(found) == 1 and expected in found[0], found
+
+
 # --- The scenarios of structure.feature (the trace of the ARCH rules) ---------
 
 from pytest_bdd import parsers, scenarios, then  # noqa: E402
@@ -356,6 +393,7 @@ STRUCTURE_CHECKS = {
     "rest imports": test_the_rest_adapter_imports_only_the_ports,
     "state": test_the_game_state_holds_no_rule_and_no_mapping,
     "port tier": check_port_tier,
+    "driven adapters": test_driven_adapters_import_only_the_outbound_ports_and_the_domain,
 }
 
 
