@@ -204,3 +204,49 @@ def test_only_the_sqlite_adapter_imports_sqlite3():
             if target[0] == "sqlite3"
         ]
     assert broken == [], "\n".join(broken)
+
+
+GAME_STATE = {"players", "places", "chat", "finished_games", "accounts", "items", "open_items", "locked_items"}
+
+
+def state_reads(tree: ast.AST) -> list[tuple[int, str, str]]:
+    """Each `game.<state>` in a module, as (line, attribute, innermost function)."""
+    found = []
+
+    def visit(node: ast.AST, function: str) -> None:
+        if isinstance(node, ast.FunctionDef):
+            function = node.name
+        if (
+            isinstance(node, ast.Attribute)
+            and node.attr in GAME_STATE
+            and isinstance(node.value, ast.Name)
+            and node.value.id == "game"
+        ):
+            found.append((node.lineno, node.attr, function))
+        for child in ast.iter_child_nodes(node):
+            visit(child, function)
+
+    visit(tree, "<module>")
+    return found
+
+
+def test_the_rest_adapter_holds_no_rule_and_changes_no_state():
+    """ARCH-5: routes reach the game state only through use cases.
+
+    The one exception: the energy gate of MOVE-5 in the route `move`, while
+    decision 0011 is proposed.
+    """
+    rest = PACKAGE / "adapters" / "rest"
+    broken = []
+    for path in sorted(rest.rglob("*.py")):
+        for line, attribute, function in state_reads(ast.parse(path.read_text(encoding="utf-8"))):
+            if (function, attribute) == ("move", "players"):
+                continue
+            broken.append(f"{path.relative_to(PACKAGE.parent)}:{line}: {function} reads game.{attribute}")
+    assert broken == [], "\n".join(broken)
+
+
+def test_the_rest_check_sees_a_planted_rule():
+    """ARCH-5: a route that writes the state is found, and named."""
+    planted = "def build_app(game):\n    def send_message(sid):\n        game.chat.append(sid)\n"
+    assert state_reads(ast.parse(planted)) == [(3, "chat", "send_message")]

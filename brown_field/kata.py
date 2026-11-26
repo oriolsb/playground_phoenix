@@ -33,6 +33,8 @@ class Item:
 class Bag:
     items: list[Item] = field(default_factory=list)
     gold: int = 0
+    # Added for the ports (decision 0015). The REST adapter reads it here.
+    energy: int = 0
 
     @property
     def score(self) -> int:
@@ -55,6 +57,8 @@ class Player:
     location: Location
     bag: Bag
     has_won: bool = False
+    # Added for the ports (decision 0015). The REST adapter reads it here.
+    energy: int = 0
 
 
 class RegisterPlayer(Protocol):
@@ -95,3 +99,50 @@ class Move(Protocol):
 
 class SaveGame(Protocol):
     def execute(self, player_sid: str) -> str: ...
+
+
+# Added by decision 0015: the commands that had no port.
+
+
+@dataclass
+class ChatLine:
+    name: str
+    text: str
+    at: str
+
+
+@dataclass
+class FinishedGame:
+    name: str
+    score: int
+    moves: int
+
+
+@dataclass
+class AccountView:
+    email: str
+    name: str
+
+
+class SendMessage(Protocol):
+    def execute(self, player_sid: str, text: str) -> str: ...
+
+
+class ReadMessages(Protocol):
+    def execute(self, player_sid: str) -> list[ChatLine]: ...
+
+
+class ShowLeaderboard(Protocol):
+    def execute(self) -> list[FinishedGame]: ...
+
+
+class RegisterAccount(Protocol):
+    def execute(self, email: str, password: str, name: str) -> AccountView: ...
+
+
+class Login(Protocol):
+    def execute(self, email: str, password: str) -> Player: ...
+
+
+class LegacyPickup(Protocol):
+    def execute(self, player_sid: str, item_sid: str) -> str: ...
