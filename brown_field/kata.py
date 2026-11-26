@@ -11,7 +11,7 @@ from .domain.errors import InvalidName, ItemNotFound, KatacombsError, NotAllowed
 from .domain.types import Action, Direction, Item
 
 __all__ = [
-    "AccountView", "Action", "Bag", "ChatLine", "Direction", "FinishedGame", "InspectBag",
+    "AccountView", "Action", "Bag", "ChatLine", "Direction", "FinishedGame", "InboundPorts", "InspectBag",
     "InspectItem", "InvalidName", "Item", "ItemNotFound", "KatacombsError", "LegacyPickup",
     "ListPlayers", "Location", "Login", "LookAround", "LookInDirection", "Move", "NotAllowed",
     "Player", "PlayerNotFound", "QuitGame", "ReadMessages", "RegisterAccount", "RegisterPlayer",
@@ -136,3 +136,28 @@ class Login(Protocol):
 
 class LegacyPickup(Protocol):
     def execute(self, player_sid: str, item_sid: str) -> str: ...
+
+
+@dataclass
+class InboundPorts:
+    """Every inbound port, for a driving adapter to receive (decision 0019).
+
+    The composition root fills it with the use cases. A test fills it with fakes.
+    """
+
+    register_player: RegisterPlayer
+    list_players: ListPlayers
+    quit_game: QuitGame
+    inspect_item: InspectItem
+    inspect_bag: InspectBag
+    use_item: UseItem
+    look_around: LookAround
+    look_in_direction: LookInDirection
+    move: Move
+    save_game: SaveGame
+    send_message: SendMessage
+    read_messages: ReadMessages
+    show_leaderboard: ShowLeaderboard
+    register_account: RegisterAccount
+    login: Login
+    legacy_pickup: LegacyPickup

@@ -20,6 +20,7 @@ from .application.ports_out import (
 )
 from .application.state import Account, ChatMessage, GameState, PlayerState
 from .domain.world import Place
+from .kata import InboundPorts
 from .application.use_cases import (
     InspectBagUseCase,
     InspectItemUseCase,
@@ -44,6 +45,7 @@ __all__ = [
     "Account",
     "ChatMessage",
     "InMemoryGame",
+    "inbound_ports",
     "InspectBagUseCase",
     "InspectItemUseCase",
     "InvalidName",
@@ -93,3 +95,29 @@ class InMemoryGame(GameState):
             accounts=accounts or SqliteAccounts(),
             world=world or JsonWorld(),
         )
+
+
+def inbound_ports(game: GameState) -> InboundPorts:
+    """The use cases of one game, as the inbound ports a driving adapter receives.
+
+    The use cases hold no state of their own, so one instance per game
+    behaves as one per request (decision 0019).
+    """
+    return InboundPorts(
+        register_player=RegisterPlayerUseCase(game),
+        list_players=ListPlayersUseCase(game),
+        quit_game=QuitGameUseCase(game),
+        inspect_item=InspectItemUseCase(game),
+        inspect_bag=InspectBagUseCase(game),
+        use_item=UseItemUseCase(game),
+        look_around=LookAroundUseCase(game),
+        look_in_direction=LookInDirectionUseCase(game),
+        move=MoveUseCase(game),
+        save_game=SaveGameUseCase(game),
+        send_message=SendMessageUseCase(game),
+        read_messages=ReadMessagesUseCase(game),
+        show_leaderboard=ShowLeaderboardUseCase(game),
+        register_account=RegisterAccountUseCase(game),
+        login=LoginUseCase(game),
+        legacy_pickup=LegacyPickupUseCase(game),
+    )
