@@ -90,3 +90,10 @@ class World:
             self.locked.remove(MANHOLE)
             return "YOU UNLOCK THE MANHOLE COVER."
         return None
+
+
+def market_is_cleaning(minute: int) -> bool:
+    """MOVE-6, decision 0001: the minute of the server's local time."""
+    # Cleaning crew contract (2023): the market is closed from minute 50 to
+    # minute 59 of each hour. Ask facilities before you change this.
+    return minute >= 50

@@ -5,14 +5,13 @@ ports and the state, and each use case reads both from it. `InMemoryGame` in
 `brown_field/game.py` builds it with the default adapters.
 """
 
-import hashlib
 from dataclasses import dataclass
 from datetime import timezone
 
 from ..domain.player import PlayerState
 from ..domain.world import Place, World
 from ..domain.errors import ItemNotFound, PlayerNotFound
-from ..kata import Bag, Item, Location, Player
+from ..kata import Item
 from .ports_out import (
     AccountStore,
     Clock,
@@ -34,17 +33,6 @@ class ChatMessage:
     name: str
     text: str
     at: str
-
-def market_is_cleaning(clock: Clock) -> bool:
-    # Cleaning crew contract (2023): the market is closed from minute 50 to
-    # minute 59 of each hour. Ask facilities before you change this.
-    return clock.now().minute >= 50
-
-
-def password_hash(password: str) -> str:
-    # TODO: bcrypt (2023)
-    return hashlib.sha256(password.encode("utf-8")).hexdigest()
-
 
 def player_from_payload(sid: str, name: str, data: dict) -> PlayerState:
     """A player from a save or a snapshot (player-state.schema.json).
@@ -168,30 +156,4 @@ class GameState:
 
     def names_in_bag(self, state: PlayerState) -> list[str]:
         return [self.items[sid].name for sid in state.bag]
-
-    def to_location(self, title: str, note: str = "") -> Location:
-        place = self.places[title]
-        return Location(
-            title=place.title,
-            description=f"{place.description} {note}".strip(),
-            exits=list(place.exits),
-            items=[self.items[sid] for sid in place.items],
-            is_exit=place.is_exit,
-        )
-
-    def to_bag(self, state: PlayerState) -> Bag:
-        return Bag(
-            items=[self.items[sid] for sid in state.bag], gold=state.gold, energy=state.energy
-        )
-
-    def to_player(self, state: PlayerState) -> Player:
-        return Player(
-            sid=state.sid,
-            name=state.name,
-            location=self.to_location(state.location),
-            bag=self.to_bag(state),
-            has_won=state.has_won,
-            energy=state.energy,
-        )
-
 
