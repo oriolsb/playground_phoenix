@@ -100,6 +100,7 @@ class MoveUseCase:
     def execute(self, player_sid: str, direction: Direction) -> Location:
         game = self.game
         state = game.player(player_sid)
+        state.ensure_rested()
         state.ensure_playing()
         exits = game.places[state.location].exits
         if direction not in exits:

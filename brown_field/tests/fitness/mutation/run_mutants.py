@@ -77,7 +77,7 @@ MUTANTS = [
     (DB, "ORDER BY saved_at", "ORDER BY player_sid", "saves load in sid order"),
     (CASES, '        state.count_command()\n        return "SENT."', '        return "SENT."', 'chat does not count a move'),
     (CASES, "if message.location == state.location", "if True", "chat shows every location"),
-    (REST, "if bag.energy <= 0:", "if bag.energy < 0:", "energy gate at -1"),
+    (PLAYER, "if self.energy <= 0:", "if self.energy < 0:", "energy gate at -1"),
     (CASES, "            state.bag.append(item_sid)\n        return \"OK\"", "            state.bag.append(item_sid)\n            state.moves += 1\n        return \"OK\"", "legacy pickup counts a move"),
     (REST, "return error(500, str(exc))", "return error(400, str(exc))", "unknown error status 500 -> 400"),
     (REST, 'return error(400, "INVALID REQUEST.")', 'return error(422, "INVALID REQUEST.")', "malformed request 400 -> 422"),

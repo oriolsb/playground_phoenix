@@ -236,7 +236,7 @@ def test_the_rest_adapter_holds_no_rule_and_changes_no_state():
     """ARCH-5: routes reach the game state only through the ports.
 
     Since decision 0019 the adapter receives only the ports, so no route names
-    the game. The MOVE-5 gate reads the energy through `InspectBag`.
+    the game. Since decision 0011 the MOVE-5 gate lives in the move port.
     """
     rest = PACKAGE / "adapters" / "rest"
     broken = []
