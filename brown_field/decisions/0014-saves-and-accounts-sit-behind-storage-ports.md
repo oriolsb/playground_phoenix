@@ -1,6 +1,6 @@
 # 0014 — Saves and accounts sit behind storage ports
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-26
 - **Need:** operational. A port test must build a game with no file. The
   support laptop and every stored account must see no change (decision 0005).

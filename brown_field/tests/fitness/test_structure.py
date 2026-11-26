@@ -304,3 +304,61 @@ def test_the_game_state_holds_no_rule_and_no_mapping():
         if isinstance(node, ast.ImportFrom):
             broken += [f"imports {alias.name}" for alias in node.names if alias.name in views]
     assert broken == [], broken
+
+
+# --- The scenarios of structure.feature (the trace of the ARCH rules) ---------
+
+from pytest_bdd import parsers, scenarios, then  # noqa: E402
+
+scenarios("structure.feature")
+
+
+def check_world_source() -> None:
+    """ARCH-6: the game reads its world through a port, and refuses a bad one."""
+    from brown_field.adapters.files.world_json import JsonWorld
+    from brown_field.game import InMemoryGame
+    from brown_field.kata import Direction
+
+    class StairsWithNoWayBack:
+        def load(self):
+            data = JsonWorld().load()
+            del data.places["BREWERY ROOFTOP"].exits[Direction.DOWN]
+            return data
+
+    with pytest.raises(ValueError, match="BREWERY ROOFTOP does not go down back"):
+        InMemoryGame(world=StairsWithNoWayBack())
+
+
+def check_port_tier() -> None:
+    """ENTRY-3: brown_field.game offers 16 use cases, each built from the game alone."""
+    import inspect
+
+    from brown_field import game
+
+    names = [
+        "RegisterPlayer", "ListPlayers", "QuitGame", "InspectItem", "InspectBag", "UseItem",
+        "LookAround", "LookInDirection", "Move", "SaveGame", "SendMessage", "ReadMessages",
+        "ShowLeaderboard", "RegisterAccount", "Login", "LegacyPickup",
+    ]
+    for name in names:
+        use_case = getattr(game, f"{name}UseCase")
+        assert list(inspect.signature(use_case).parameters) == ["game"], name
+
+
+STRUCTURE_CHECKS = {
+    "layers": test_each_layer_imports_only_the_layers_inside_it,
+    "ports": test_each_use_case_satisfies_its_port,
+    "outside world": test_only_adapters_read_the_clock_draw_chance_or_open_files,
+    "sqlite": test_only_the_sqlite_adapter_imports_sqlite3,
+    "rest state": test_the_rest_adapter_holds_no_rule_and_changes_no_state,
+    "world source": check_world_source,
+    "domain": test_the_domain_imports_nothing_outside_the_domain,
+    "rest imports": test_the_rest_adapter_imports_only_the_ports,
+    "state": test_the_game_state_holds_no_rule_and_no_mapping,
+    "port tier": check_port_tier,
+}
+
+
+@then(parsers.parse('the structure check "{name}" finds no break'))
+def the_structure_check_finds_no_break(name):
+    STRUCTURE_CHECKS[name]()

@@ -1,7 +1,7 @@
 # 0013 — The clock, randomness and the high-score file sit behind outbound ports
 
-- **Status:** proposed
-- **Replaces:** 0008, if accepted. Then 0008 takes the status "replaced by 0013".
+- **Status:** accepted
+- **Replaces:** 0008.
 - **Date:** 2026-11-26
 - **Need:** operational. The Evaluation needs to control the time and the
   chance without patching the standard library. Decision 0008 says: "Day 3

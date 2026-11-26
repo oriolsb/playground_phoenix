@@ -95,9 +95,19 @@ Do not type this line by hand. After the review, a person runs
 | CONF-3 | python -m brown_field serves the API on 127.0.0.1, port 8000 | - | durable | `boundary/startup.feature` |
 | ENTRY-1 | Two servers made from one game share its players (+1 more) | - | durable | `boundary/startup.feature` |
 | ENTRY-2 | The module brown_field.api holds a ready server (+1 more) | - | durable | `boundary/startup.feature` |
+| ENTRY-3 | The port tier offers a use case for each command | port | durable while the seam holds (decision 0008) | `fitness/structure.feature` |
 | OPS-1 | A mix of 100 commands responds in less than 100 ms at p99 | api | live (simulated) | `fitness/ops.feature` |
 | LEGACY-1 | A bag of 8 slots, 3 items with the same name per slot, refuses a ninth slot (+1 more) | api | durable | `rest/items.feature`, `rest/legacy.feature` |
 | LEGACY-2 | The legacy pickup of an item elsewhere answers OK and changes nothing | api | durable | `rest/legacy.feature` |
+| ARCH-1 | Each layer imports only the layers inside it | - | durable (structure) | `fitness/structure.feature` |
+| ARCH-2 | Each use case satisfies its port | - | durable (structure) | `fitness/structure.feature` |
+| ARCH-3 | Only adapters read the clock, draw chance or open files | - | durable (structure) | `fitness/structure.feature` |
+| ARCH-4 | Only the SQLite adapter imports sqlite3 | - | durable (structure) | `fitness/structure.feature` |
+| ARCH-5 | The REST adapter holds no rule and changes no state | - | durable (structure) | `fitness/structure.feature` |
+| ARCH-6 | A world with a missing way back refuses to build | port | durable (structure) | `fitness/structure.feature` |
+| ARCH-7 | The domain imports nothing outside the domain | - | durable (structure) | `fitness/structure.feature` |
+| ARCH-8 | The REST adapter imports only the ports | - | durable (structure) | `fitness/structure.feature` |
+| ARCH-9 | The game state holds no rule and no mapping | - | durable (structure) | `fitness/structure.feature` |
 
 ## Operational limits and fitness functions
 
@@ -154,7 +164,6 @@ one records today's behavior; a decision record must confirm or change it.
 | `rest/save.feature`: A restart puts a saved item back in its location too | SAVE-2 |
 | `rest/save.feature`: A save from before 2023 stops the server from starting | SAVE-2 |
 | `rest/save.feature`: the save answer holds the server's file path | SAVE-1 |
-| `ports/ports.feature`: The move port has no energy gate | MOVE-5 |
 
 ## Rules with a partial check
 

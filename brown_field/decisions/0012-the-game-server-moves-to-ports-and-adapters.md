@@ -1,6 +1,6 @@
 # 0012 — The game-server moves to ports and adapters behind the frozen boundary
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-26
 - **Need:** operational. Day 3 changes the structure of the system
   (`README.md`, "Today, you recover the knowledge of the system. On day 3,

@@ -1,6 +1,6 @@
 # 0017 — The game rules move into a domain model
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-26
 - **Need:** operational. The next person who changes a game rule changes
   one object of the domain, not a use case with its ports and its mapping.

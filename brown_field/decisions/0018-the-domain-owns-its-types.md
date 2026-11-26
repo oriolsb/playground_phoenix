@@ -1,6 +1,6 @@
 # 0018 — The domain owns its types, and kata.py re-exports them
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-26
 - **Need:** operational. The domain must be the innermost ring, so it can be
   regenerated without the public API (finding F4 of the hexagonal review).

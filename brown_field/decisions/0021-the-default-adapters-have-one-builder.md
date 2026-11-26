@@ -1,6 +1,6 @@
 # 0021 — The default adapters have one builder
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-26
 - **Need:** not applicable to a caller. A reader of the composition root
   must see where the defaults come from (finding F5 of the hexagonal review).

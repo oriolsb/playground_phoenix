@@ -1,6 +1,6 @@
 # 0019 — The REST adapter receives its inbound ports
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-26
 - **Need:** operational. The inbound ports must be the real contract of the
   driving side, so the REST adapter can be regenerated and tested alone
