@@ -188,3 +188,19 @@ def test_only_adapters_read_the_clock_draw_chance_or_open_files():
             if target[0] == "random"
         ]
     assert broken == [], "\n".join(broken)
+
+
+def test_only_the_sqlite_adapter_imports_sqlite3():
+    """ARCH-4: the saves and the accounts reach SQLite only through adapters/sqlite/."""
+    broken = []
+    for path in code_modules():
+        parts = module_name(path)
+        if parts[:3] == ["brown_field", "adapters", "sqlite"]:
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        broken += [
+            f"{path.relative_to(PACKAGE.parent)}:{line}: imports sqlite3"
+            for line, target in imported(tree, parts, path.name == "__init__.py")
+            if target[0] == "sqlite3"
+        ]
+    assert broken == [], "\n".join(broken)

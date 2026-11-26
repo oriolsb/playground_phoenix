@@ -1,10 +1,7 @@
 """In-memory implementation of the Katacombs use cases."""
 
 import hashlib
-import json
 import math
-import os
-import sqlite3
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import timezone
@@ -12,7 +9,16 @@ from datetime import timezone
 from .adapters.files.high_scores import JsonlHighScores
 from .adapters.system.clock import SystemClock
 from .adapters.system.random_source import StdRandom
-from .application.ports_out import Clock, HighScoreSink, RandomSource
+from .adapters.sqlite.stores import SqliteAccounts, SqliteSaves
+from .application.ports_out import (
+    AccountStore,
+    Clock,
+    HighScoreSink,
+    RandomSource,
+    SavedPlayer,
+    SaveStore,
+    StoredAccount,
+)
 from .kata import Action, Bag, Direction, Item, Location, Player
 
 BAG_SLOTS = 8
@@ -118,13 +124,8 @@ class PlayerState:
     has_won: bool = False
 
 
-@dataclass
-class Account:
-    email: str
-    password_hash: str
-    name: str
-    player_sid: str | None = None
-    snapshot: dict | None = None
+# An account, as the game and the store keep it (decision 0014).
+Account = StoredAccount
 
 
 @dataclass
@@ -326,32 +327,6 @@ def slots_used(names: list[str]) -> int:
     return sum(math.ceil(count / ITEMS_PER_SLOT) for count in Counter(names).values())
 
 
-SAVE_SCHEMA = """
-CREATE TABLE IF NOT EXISTS saves (
-    player_sid TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    payload TEXT NOT NULL,
-    saved_at TEXT NOT NULL
-)
-"""
-
-
-def save_path() -> str:
-    # The support laptop sets KATACOMBS_DB. Nobody else does.
-    return os.environ.get("KATACOMBS_DB", "katacombs.db")
-
-
-ACCOUNTS_SCHEMA = """
-CREATE TABLE IF NOT EXISTS accounts (
-    email TEXT PRIMARY KEY,
-    password_hash TEXT NOT NULL,
-    name TEXT NOT NULL,
-    player_sid TEXT,
-    snapshot TEXT
-)
-"""
-
-
 def password_hash(password: str) -> str:
     # TODO: bcrypt (2023)
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
@@ -370,26 +345,6 @@ def snapshot_of(state: "PlayerState") -> dict:
     }
 
 
-def write_account(account: Account) -> None:
-    connection = sqlite3.connect(save_path())
-    try:
-        connection.execute(ACCOUNTS_SCHEMA)
-        connection.execute(
-            "INSERT OR REPLACE INTO accounts"
-            " (email, password_hash, name, player_sid, snapshot) VALUES (?, ?, ?, ?, ?)",
-            (
-                account.email,
-                account.password_hash,
-                account.name,
-                account.player_sid,
-                json.dumps(account.snapshot) if account.snapshot is not None else None,
-            ),
-        )
-        connection.commit()
-    finally:
-        connection.close()
-
-
 class InMemoryGame:
     def __init__(
         self,
@@ -397,12 +352,17 @@ class InMemoryGame:
         clock: Clock | None = None,
         random_source: RandomSource | None = None,
         high_scores: HighScoreSink | None = None,
+        saves: SaveStore | None = None,
+        accounts: AccountStore | None = None,
     ) -> None:
         # The outbound ports (decision 0013). Each default calls the standard
         # library at the moment of each call, as the code did before.
         self.clock: Clock = clock or SystemClock()
         self.random_source: RandomSource = random_source or StdRandom()
         self.high_scores: HighScoreSink = high_scores or JsonlHighScores()
+        # The storage ports (decision 0014). The defaults are the database file.
+        self.save_store: SaveStore = saves or SqliteSaves()
+        self.account_store: AccountStore = accounts or SqliteAccounts()
         self.places = build_places()
         self.items = build_items()
         self.gold_inside = {CRATE: 10}
@@ -417,25 +377,8 @@ class InMemoryGame:
         self.load_accounts()
 
     def load_accounts(self) -> None:
-        path = save_path()
-        if not os.path.exists(path):
-            return
-        connection = sqlite3.connect(path)
-        try:
-            connection.execute(ACCOUNTS_SCHEMA)
-            rows = connection.execute(
-                "SELECT email, password_hash, name, player_sid, snapshot FROM accounts"
-            ).fetchall()
-        finally:
-            connection.close()
-        for email, hashed, name, player_sid, snapshot in rows:
-            self.accounts[email] = Account(
-                email=email,
-                password_hash=hashed,
-                name=name,
-                player_sid=player_sid,
-                snapshot=json.loads(snapshot) if snapshot else None,
-            )
+        for account in self.account_store.load_all():
+            self.accounts[account.email] = account
 
     def account_of(self, player_sid: str) -> Account | None:
         for account in self.accounts.values():
@@ -446,19 +389,8 @@ class InMemoryGame:
     def load_saves(self) -> None:
         # A restart reads the saves, so a player keeps the bag and the place.
         # The world is not in the save. Nobody wrote down why.
-        path = save_path()
-        if not os.path.exists(path):
-            return
-        connection = sqlite3.connect(path)
-        try:
-            connection.execute(SAVE_SCHEMA)
-            rows = connection.execute(
-                "SELECT player_sid, name, payload FROM saves ORDER BY saved_at"
-            ).fetchall()
-        finally:
-            connection.close()
-        for sid, name, payload in rows:
-            data = json.loads(payload)
+        for saved in self.save_store.load_all():
+            sid, name, data = saved.sid, saved.name, saved.payload
             if data["location"] not in self.places:
                 # The world changed under an old save.
                 continue
@@ -573,7 +505,7 @@ class QuitGameUseCase:
         account = self.game.account_of(player_sid)
         if account is not None:
             account.snapshot = snapshot_of(state)
-            write_account(account)
+            self.game.account_store.put(account)
         self.game.places[state.location].items.extend(state.bag)
         del self.game.players[player_sid]
 
@@ -742,35 +674,9 @@ class SaveGameUseCase:
 
     def execute(self, player_sid: str) -> str:
         state = self.game.player(player_sid)
-        payload = {
-            "location": state.location,
-            "bag": list(state.bag),
-            "gold": state.gold,
-            "energy": state.energy,
-            "moves": state.moves,
-            "visited": sorted(state.visited),
-            "opened": sorted(state.opened),
-            "has_won": state.has_won,
-        }
         # 2023: the payload also holds the energy and the move count.
-        path = save_path()
-        connection = sqlite3.connect(path)
-        try:
-            connection.execute(SAVE_SCHEMA)
-            connection.execute(
-                "INSERT OR REPLACE INTO saves"
-                " (player_sid, name, payload, saved_at) VALUES (?, ?, ?, ?)",
-                (
-                    state.sid,
-                    state.name,
-                    json.dumps(payload),
-                    self.game.now_iso(),
-                ),
-            )
-            connection.commit()
-        finally:
-            connection.close()
-        return path
+        saved = SavedPlayer(state.sid, state.name, snapshot_of(state))
+        return self.game.save_store.save(saved, self.game.clock.now())
 
 
 class RegisterAccountUseCase:
@@ -789,7 +695,7 @@ class RegisterAccountUseCase:
             raise InvalidName("THIS NAME IS RESERVED.")
         account = Account(email=email, password_hash=password_hash(password), name=name)
         self.game.accounts[email] = account
-        write_account(account)
+        self.game.account_store.put(account)
         return account
 
 
@@ -827,5 +733,5 @@ class LoginUseCase:
             player = RegisterPlayerUseCase(game).execute(account.name)
             state = game.players[player.sid]
         account.player_sid = state.sid
-        write_account(account)
+        self.game.account_store.put(account)
         return game.to_player(state)
