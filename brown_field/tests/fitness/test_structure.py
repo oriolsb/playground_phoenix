@@ -1,6 +1,7 @@
 """Bind structure.feature: the structure of decision 0012, checked with ast."""
 
 import ast
+import re
 from pathlib import Path
 
 from pytest_bdd import parsers, scenarios, then, when
@@ -62,3 +63,15 @@ def it_does_no_io(tree, modules):
     opens = [n.lineno for n in ast.walk(tree) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == "open"]
     assert not imported & banned, f"imports {sorted(imported & banned)} (ENTRY-6)"
     assert not opens, f"calls open at lines {opens} (ENTRY-6)"
+
+
+@when(parsers.parse('the check reads the string literals of "{source}"'), target_fixture="literals")
+def the_check_reads_the_literals(source):
+    tree = ast.parse((ROOT / source).read_text(encoding="utf-8"))
+    return [n.value for n in ast.walk(tree) if isinstance(n, ast.Constant) and isinstance(n.value, str)]
+
+
+@then("none of them is an item sid")
+def no_item_sid(literals):
+    sids = [text for text in literals if re.fullmatch(r"\d{6}-\d{12}-\d{8}", text)]
+    assert not sids, f"item sids in the rules: {sids} (WORLD-3)"

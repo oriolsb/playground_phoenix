@@ -24,3 +24,13 @@ Feature: The structure of decision 0012, checked on the code
       | game.py        |
       | core/state.py  |
       | core/ports.py  |
+
+  @WORLD-3
+  Scenario Outline: The rules name no item: <source>
+    When the check reads the string literals of "<source>"
+    Then none of them is an item sid
+
+    Examples:
+      | source        |
+      | game.py       |
+      | core/world.py |

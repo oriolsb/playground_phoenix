@@ -27,6 +27,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]
 G, A = "brown_field/game.py", "brown_field/api.py"
+W, WO = "brown_field/spec/world.json", "brown_field/core/world.py"
 ST, DB, HS, SY = "brown_field/core/state.py", "brown_field/adapters/sqlite_store.py", "brown_field/adapters/highscores.py", "brown_field/adapters/system.py"
 
 # (file, old text, new text, label). Each old text must occur exactly once.
@@ -41,8 +42,8 @@ MUTANTS = [
     (G, "MAX_ENERGY = 20", "MAX_ENERGY = 21", "max energy 20 -> 21"),
     (G, "RAT_CHANCE = 0.2", "RAT_CHANCE = 0.3", "rat chance 0.2 -> 0.3"),
     (G, "RAT_CHANCE = 0.2", "RAT_CHANCE = 0.1", "rat chance 0.2 -> 0.1"),
-    (G, '"BREAD": 5', '"BREAD": 4', "bread energy 5 -> 4"),
-    (G, '"BEER": 3}', '"BEER": 4}', "beer energy 3 -> 4"),
+    (W, '"sid": "000100-000000000000-00000008",\n      "name": "BREAD",\n      "description": "A WARM LOAF OF BREAD. IT SMELLS GOOD.",\n      "actions": [\n        "pick",\n        "drop",\n        "use"\n      ],\n      "value": 0,\n      "use": {\n        "energy": 5', '"sid": "000100-000000000000-00000008",\n      "name": "BREAD",\n      "description": "A WARM LOAF OF BREAD. IT SMELLS GOOD.",\n      "actions": [\n        "pick",\n        "drop",\n        "use"\n      ],\n      "value": 0,\n      "use": {\n        "energy": 4', "bread energy 5 -> 4"),
+    (W, '"sid": "000100-000000000000-00000001",\n      "name": "BEER",\n      "description": "A BOTTLE OF CRAFTED BEER FROM THE BREWERY.",\n      "actions": [\n        "pick",\n        "drop",\n        "use"\n      ],\n      "value": 0,\n      "use": {\n        "energy": 3', '"sid": "000100-000000000000-00000001",\n      "name": "BEER",\n      "description": "A BOTTLE OF CRAFTED BEER FROM THE BREWERY.",\n      "actions": [\n        "pick",\n        "drop",\n        "use"\n      ],\n      "value": 0,\n      "use": {\n        "energy": 4', "beer energy 3 -> 4"),
     (G, "now.minute >= 50", "now.minute >= 51", "market closes at 51"),
     (SY, "return datetime.now()", "return datetime.utcnow()", "market reads UTC"),
     (DB, 'os.environ.get("KATACOMBS_DB", "katacombs.db")', 'os.environ.get("KATACOMBS_DB", "game.db")', "default database file name"),
@@ -59,13 +60,13 @@ MUTANTS = [
     (G, "if sid not in game.players and len(game.players) >= MAX_PLAYERS:", "if False:", "login restore ignores the player limit"),
     (G, "if title not in state.visited:", "if True:", "gold on every visit"),
     (G, '"YOUR BAG IS FULL."', '"THE BAG IS FULL."', "bag-full message"),
-    (G, "if item_sid == KEY and state.location == BACK_YARD:", "if item_sid == KEY:", "key unlocks anywhere"),
+    (G, 'if "unlocks" in use and state.location == use["where"]:', 'if "unlocks" in use:', "key unlocks anywhere"),
     (G, '"NOTHING HAPPENS."', '"NOTHING HAPPENED."', "nothing-happens message"),
-    (G, "state.energy = min(MAX_ENERGY, state.energy + ENERGY_FROM[item.name])", "state.energy = state.energy + ENERGY_FROM[item.name]", "no energy cap"),
-    (G, "                game.disconnect(BACK_YARD, Direction.DOWN)", "                pass", "closing the manhole keeps the exit"),
+    (G, 'state.energy = min(MAX_ENERGY, state.energy + use["energy"])', 'state.energy = state.energy + use["energy"]', "no energy cap"),
+    (G, "                game.disconnect(*game.world.opened_exits[item_sid][:2])", "                pass", "closing the manhole keeps the exit"),
     (HS, '"at": datetime.now(timezone.utc).isoformat(timespec="seconds"),\n        }\n        with open', '"at": datetime.now(timezone.utc).isoformat(),\n        }\n        with open', "high-score time with microseconds"),
     (G, "if sid not in self.players and sid not in self.items:", "if True:", "sid collision check removed"),
-    (G, "if (place.title, direction) in ONE_WAY:\n                continue", "if True:\n                continue", "world check disabled"),
+    (WO, "if (place.title, direction) in world.one_way:\n                continue", "if True:\n                continue", "world check disabled"),
     (G, "            if account.player_sid == player_sid:\n                return account", "            if account.player_sid:\n                return account", "a quit finds the first account with a player"),
     (DB, "ORDER BY saved_at", "ORDER BY player_sid", "saves load in sid order"),
     (G, '        state.moves += 1\n        return "SENT."', '        return "SENT."', "chat does not count a move"),

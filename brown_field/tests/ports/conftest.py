@@ -8,6 +8,7 @@ other; the map lists them as a port tier that holds only while the seam is
 kept (see the decision records).
 """
 
+import json
 import random
 import re
 from datetime import datetime
@@ -17,6 +18,7 @@ from pytest_bdd import given, parsers, then, when
 
 from brown_field import game as legacy
 from brown_field.adapters.memory import MemoryHighScores, MemoryStore
+from brown_field.core.world import WORLD_FILE
 from brown_field.kata import Action, Direction
 
 VERBS = {"takes": Action.PICK, "drops": Action.DROP, "opens": Action.OPEN, "closes": Action.CLOSE, "uses": Action.USE}
@@ -95,6 +97,37 @@ class AlwaysZero:
 @given("the game behind the ports runs on a random source that always answers 0")
 def on_a_zero_random_source(ports):
     ports.game = legacy.InMemoryGame(rng=AlwaysZero())
+
+
+@given("the game behind the ports runs on the world file with a pantry up from BRICK LANE")
+def on_a_world_with_a_pantry(ports):
+    world = json.loads(WORLD_FILE.read_text(encoding="utf-8"))
+    apple = "000100-000000000000-00000099"
+    next(l for l in world["locations"] if l["title"] == "BRICK LANE")["exits"]["up"] = "PANTRY"
+    world["locations"].append(
+        {"title": "PANTRY", "description": "A SMALL PANTRY.", "exits": {"down": "BRICK LANE"}, "items": [apple], "gold": 0, "isExit": False}
+    )
+    world["items"].append(
+        {"sid": apple, "name": "APPLE", "description": "A RED APPLE.", "actions": ["pick", "drop", "use"], "value": 0,
+         "use": {"energy": 2, "message": "YOU EAT THE APPLE."}}
+    )
+    ports.game = legacy.InMemoryGame(world=world)
+
+
+@when("a game starts behind the ports on the world file where BRICK LANE goes up to KATACOMBS EXIT")
+def on_a_world_without_a_way_back(ports):
+    world = json.loads(WORLD_FILE.read_text(encoding="utf-8"))
+    next(l for l in world["locations"] if l["title"] == "BRICK LANE")["exits"]["up"] = "KATACOMBS EXIT"
+    try:
+        legacy.InMemoryGame(world=world)
+    except ValueError as error:
+        ports.error = error
+
+
+@then(parsers.parse('the start is refused with "{message}"'))
+def the_start_is_refused(ports, message):
+    assert isinstance(ports.error, ValueError), ports.error
+    assert str(ports.error) == message
 
 
 @when("a new game starts behind the ports")

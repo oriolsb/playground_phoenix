@@ -232,3 +232,19 @@ Feature: The use-case ports answer as the REST routes do, with their own differe
     And the port moves the player down
     Then the location through the port ends with "A RAT RUNS OFF WITH YOUR BEER."
     And the bag through the port holds ""
+
+  @port @WORLD-3 @ACT-15
+  Scenario: A world given to the game plays a new location and a new food item with no code change
+    Given the game behind the ports runs on the world file with a pantry up from BRICK LANE
+    And the port has registered a player named "ana"
+    When the port moves the player up
+    Then the port answers the location "PANTRY"
+    When the port takes the "APPLE"
+    And the port uses the "APPLE"
+    Then the port answers "YOU EAT THE APPLE."
+    And the bag through the port shows energy 13
+
+  @port @WORLD-3 @WORLD-2
+  Scenario: A world given to the game with an exit that has no way back is refused at the start
+    When a game starts behind the ports on the world file where BRICK LANE goes up to KATACOMBS EXIT
+    Then the start is refused with "BRICK LANE goes up to KATACOMBS EXIT, but KATACOMBS EXIT does not go down back"

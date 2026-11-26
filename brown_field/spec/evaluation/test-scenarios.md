@@ -35,6 +35,7 @@ Do not type this line by hand. After the review, a person runs
 | PLAYER-9 | A player who quits is gone (+2 more) | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/players.feature` |
 | WORLD-1 | The world file is valid; each location, each look, each first-visit gold, each item, each gold inside and lock match `world.json` (+3 more) | api | durable | `world/world.feature` |
 | WORLD-2 | The slide from the cellar has no way back; every other exit has one (+1 more) | api | durable | `world/world.feature` |
+| WORLD-3 | A world given to the game plays a new location and a new food item with no code change (+2 more) | port, - | port while the seam holds; durable (fitness) | `ports/ports.feature`, `fitness/structure.feature` |
 | LOOK-1 | Looking around shows the start location (+1 more) | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/moving.feature` |
 | LOOK-2 | Looking through an exit shows the next location without moving (+1 more) | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/moving.feature` |
 | LOOK-3 | Looking where there is no exit is refused (+1 more) | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/moving.feature` |

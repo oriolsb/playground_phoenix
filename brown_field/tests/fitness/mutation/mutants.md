@@ -43,7 +43,7 @@ the original code.
 | closing the manhole keeps the exit | ACT-13 | killed | |
 | high-score time with microseconds | WIN-3 | killed | |
 | sid collision check removed | PLAYER-1 | survives | Not observable: a new sid is random in a space of about 10^26, so a repeat never happens in a test. The rule (PLAYER-1) states that a sid is unique. |
-| world check disabled | WORLD-2 | survives | Not reachable: the world is fixed data, so the start-up check never fails from outside. The world feature checks the way back of every exit instead. |
+| world check disabled | WORLD-2 | killed | |
 | a quit finds the first account with a player | ACCOUNT-6 | killed | |
 | saves load in sid order | SAVE-2 | killed | |
 | chat does not count a move | CHAT-3 | killed | |

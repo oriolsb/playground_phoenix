@@ -1,6 +1,6 @@
 {
   "$schema": "./world.schema.json",
-  "$comment": "Characterized from the legacy game on 2026-11-25 (game.py:50-301, 410-412). The order of each list is the order the API shows.",
+  "$comment": "Characterized from the legacy game on 2026-11-25 (game.py:50-301, 410-412). The order of each list is the order the API shows. The use effects of KEY, BEER and BREAD moved here from game.py:719-734 (change modular-core).",
   "version": 1,
   "start": "BRICK LANE",
   "locations": [
@@ -196,7 +196,11 @@
         "drop",
         "use"
       ],
-      "value": 0
+      "value": 0,
+      "use": {
+        "energy": 3,
+        "message": "YOU DRINK THE BEER. YOU FEEL BRAVE."
+      }
     },
     {
       "sid": "000100-000000000000-00000007",
@@ -207,7 +211,11 @@
         "drop",
         "use"
       ],
-      "value": 0
+      "value": 0,
+      "use": {
+        "energy": 3,
+        "message": "YOU DRINK THE BEER. YOU FEEL BRAVE."
+      }
     },
     {
       "sid": "000100-000000000000-00000002",
@@ -218,7 +226,13 @@
         "drop",
         "use"
       ],
-      "value": 0
+      "value": 0,
+      "use": {
+        "unlocks": "000100-000000000000-00000005",
+        "where": "BACK YARD",
+        "message": "YOU UNLOCK THE MANHOLE COVER.",
+        "alreadyMessage": "THE MANHOLE COVER IS ALREADY UNLOCKED."
+      }
     },
     {
       "sid": "000100-000000000000-00000003",
@@ -271,7 +285,11 @@
         "drop",
         "use"
       ],
-      "value": 0
+      "value": 0,
+      "use": {
+        "energy": 5,
+        "message": "YOU EAT THE BREAD. YOU FEEL STRONGER."
+      }
     },
     {
       "sid": "000100-000000000000-00000009",
@@ -282,7 +300,11 @@
         "drop",
         "use"
       ],
-      "value": 0
+      "value": 0,
+      "use": {
+        "energy": 5,
+        "message": "YOU EAT THE BREAD. YOU FEEL STRONGER."
+      }
     },
     {
       "sid": "000100-000000000000-00000010",
@@ -293,7 +315,11 @@
         "drop",
         "use"
       ],
-      "value": 0
+      "value": 0,
+      "use": {
+        "energy": 5,
+        "message": "YOU EAT THE BREAD. YOU FEEL STRONGER."
+      }
     },
     {
       "sid": "000100-000000000000-00000011",
