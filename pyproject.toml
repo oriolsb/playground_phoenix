@@ -23,6 +23,7 @@ dev = [
     "time-machine>=3.6.0",
     "pytest-cov>=7.1.0",
     "mutmut>=3.8.1",
+    "mypy>=2.4.1",
 ]
 
 [tool.pytest.ini_options]
