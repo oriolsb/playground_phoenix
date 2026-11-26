@@ -7,7 +7,7 @@
   to the mobile release, so mobile client v1 and the web client are the
   callers with the need.
 - **Traces to:** `MOVE-5`, `WEB-MOVE-2`, `MOVE-2`, `ACT-15`.
-- **Change:** None. Open for the group: no code changes until it is accepted.
+- **Change:** hexagon-9-energy-gate
 - **Evidence (legacy code only):**
   - `api.py:210-214`, "Added for the mobile release: a tired player cannot
     move." The REST route refuses a move at energy 0 or less, before it
