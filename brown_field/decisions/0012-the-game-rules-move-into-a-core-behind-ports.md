@@ -92,4 +92,5 @@ attempt that was dropped for its order of work, not for its design.
 | The REST adapter holds no rule (`OPS-3`, `fitness/architecture.feature`) | pass; fails today | `uv run pytest brown_field/tests -m OPS-3` | A second adapter gets every rule, the energy gate included |
 | The behavior does not change | every other scenario, the 7 transcripts and the contract tests pass before and after | `uv run pytest brown_field/tests` | Mobile client v1, the web client and the marketing job see no change |
 | The move port refuses a tired player (`MOVE-5`) | pass; fails today | `uv run pytest brown_field/tests -m MOVE-5` | Every adapter gets the gate (decision 0011) |
+| The tree answers like the legacy code (`fitness/test_differential.py`) | 0 sessions differ from `10a5221` over REST; the control differs | `KATACOMBS_DIFFERENTIAL=1 uv run pytest brown_field/tests -m differential` | Every client sees no change, also under a local time zone and with the rat on |
 | No new surviving mutant | as in `mutation/mutants.md` | `uv run python brown_field/tests/fitness/mutation/run_mutants.py` | The tests still see each rule in its new place |
