@@ -58,7 +58,7 @@ sid, exit and description comes from the data.
 ## Consequences
 
 **Easier:** a change of content is a change of `world.json`, checked by
-the schema at start. The code loses about 200 lines.
+the way-back rule at start and by the schema in the tests. The code loses about 200 lines.
 
 **More difficult:** the server now reads a file of `spec/` at start. A
 package build must include it. A bad edit of `world.json` stops the server
