@@ -35,12 +35,13 @@ testpaths = ["brown_field/tests"]
 markers = [
     "fitness: a fitness function",
     "contested: pins a behavior of today that a decision record must confirm or change",
+    "differential: the code against a baseline revision, over the same sessions (opt-in: KATACOMBS_DIFFERENTIAL=1)",
 ]
 
 # Mutation testing (decision 0010): `uv run mutmut run`, then `uv run mutmut results`.
 # The hand-written mutants: brown_field/tests/fitness/mutation/run_mutants.py.
 [tool.mutmut]
-source_paths = ["brown_field/game.py", "brown_field/api.py"]
+source_paths = ["brown_field/core", "brown_field/adapters", "brown_field/api.py"]
 also_copy = ["brown_field/"]
 pytest_add_cli_args = [
     "-p", "no:warnings", "-x",

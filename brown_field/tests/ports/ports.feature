@@ -64,13 +64,14 @@ Feature: The use-case ports answer as the REST routes do, with their own differe
     When the port moves the player west
     Then the port refuses with NotAllowed "YOU CAN'T GO THAT WAY."
 
-  @port @MOVE-5 @contested
-  Scenario: The move port has no energy gate
-    # 14 moves through the route would stop at the 13th (MOVE-5). The port
-    # lets every one of them through: the energy goes below 0.
+  @port @MOVE-5
+  Scenario: The move port refuses a tired player
+    # Decision 0011: the gate lives in the move port, at energy 0. A new
+    # player has 12 energy (MOVE-2), so the 13th move is refused, as over REST.
     Given the port has registered a player named "ana"
-    When the port moves the player north and south 7 times
-    Then the port answers the location "BRICK LANE"
+    When the port moves the player north and south 6 times
+    And the port moves the player north
+    Then the port refuses with NotAllowed "YOU ARE TOO TIRED TO MOVE. EAT OR DRINK SOMETHING."
 
   @port @MOVE-6
   Scenario Outline: The move port follows the market clock: minute <minute>
