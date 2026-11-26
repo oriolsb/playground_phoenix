@@ -30,3 +30,4 @@ each one keeps its open question on its rule.
 | [0019](0019-the-rest-adapter-receives-its-ports.md) | The REST adapter receives its inbound ports | accepted | `ARCH-8`, `ARCH-5`, `ENTRY-1`, `ENTRY-2`, `MOVE-5`, `PLAYER-9` | hexagon-8-inbound-injection |
 | [0020](0020-the-game-state-holds-no-rules.md) | The game state holds no rules and no view mapping | accepted | `ARCH-9`, `MOVE-6`, `STORE-3` | hexagon-10-slim-state |
 | [0021](0021-the-default-adapters-have-one-builder.md) | The default adapters have one builder | accepted | `ENTRY-1` | hexagon-11-composition-factory |
+| [0022](0022-driven-adapters-import-only-ports-and-domain.md) | Driven adapters import only the outbound ports and the domain | proposed | `ARCH-10` | hexagon-12-driven-adapter-imports |
