@@ -291,3 +291,16 @@ def test_the_rest_adapter_imports_only_the_ports():
             if target[0] == "brown_field" and layer_of(target) in ("application", "domain")
         ]
     assert broken == [], "\n".join(broken)
+
+
+def test_the_game_state_holds_no_rule_and_no_mapping():
+    """ARCH-9: application/state.py holds the ports, the aggregates and their lookups only."""
+    path = PACKAGE / "application" / "state.py"
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    defined = {node.name for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.ClassDef))}
+    broken = sorted(name for name in defined if name.startswith("to_") or name in {"market_is_cleaning", "password_hash"})
+    views = {"Player", "Bag", "Location"}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            broken += [f"imports {alias.name}" for alias in node.names if alias.name in views]
+    assert broken == [], broken

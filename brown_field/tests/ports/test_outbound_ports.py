@@ -9,6 +9,7 @@ from datetime import datetime
 import pytest
 
 from brown_field.game import InMemoryGame, MoveUseCase, NotAllowed, RegisterPlayerUseCase, UseItemUseCase
+from brown_field.application.views import to_bag
 from brown_field.kata import Action, Direction
 
 BEER = "000100-000000000000-00000001"
@@ -82,4 +83,4 @@ def test_the_high_score_port_gets_the_win():
     for way in ("south", "east", "down", "east", "north", "east"):
         MoveUseCase(game).execute(sid, Direction(way))
     assert game.players[sid].has_won, game.players[sid].location
-    assert sink.lines == [("ANA", game.to_bag(game.players[sid]).score, clock.moment)]
+    assert sink.lines == [("ANA", to_bag(game, game.players[sid]).score, clock.moment)]

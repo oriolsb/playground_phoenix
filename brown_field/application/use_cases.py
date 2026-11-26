@@ -4,18 +4,19 @@ Each one takes the game as its only argument (decision 0008) and reaches the
 outside only through the ports that the game holds.
 """
 
+from ..domain.accounts import password_hash
 from ..domain.constants import CELLAR, MARKET, MAX_PLAYERS, TUBE_TUNNEL
 from ..domain.errors import ItemNotFound, NotAllowed
 from ..domain.names import check_email, player_name
 from ..domain.player import PlayerState
+from ..domain.world import market_is_cleaning
 from ..kata import AccountView, Action, Bag, ChatLine, Direction, FinishedGame, Item, Location, Player
 from .ports_out import SavedPlayer
+from .views import to_bag, to_location, to_player
 from .state import (
     Account,
     ChatMessage,
     GameState,
-    market_is_cleaning,
-    password_hash,
     player_from_payload,
     snapshot_of,
 )
@@ -32,7 +33,7 @@ class RegisterPlayerUseCase:
         state = PlayerState(sid=self.game.new_sid(), name=name, location=self.game.start)
         state.visit(self.game.places[self.game.start])
         self.game.players[state.sid] = state
-        return self.game.to_player(state)
+        return to_player(self.game, state)
 
 
 class ListPlayersUseCase:
@@ -40,7 +41,7 @@ class ListPlayersUseCase:
         self.game = game
 
     def execute(self) -> list[Player]:
-        return [self.game.to_player(state) for state in self.game.players.values()]
+        return [to_player(self.game, state) for state in self.game.players.values()]
 
 
 class QuitGameUseCase:
@@ -70,7 +71,7 @@ class InspectBagUseCase:
         self.game = game
 
     def execute(self, player_sid: str) -> Bag:
-        return self.game.to_bag(self.game.player(player_sid))
+        return to_bag(self.game, self.game.player(player_sid))
 
 
 class LookAroundUseCase:
@@ -78,7 +79,7 @@ class LookAroundUseCase:
         self.game = game
 
     def execute(self, player_sid: str) -> Location:
-        return self.game.to_location(self.game.player(player_sid).location)
+        return to_location(self.game, self.game.player(player_sid).location)
 
 
 class LookInDirectionUseCase:
@@ -90,7 +91,7 @@ class LookInDirectionUseCase:
         exits = self.game.places[state.location].exits
         if direction not in exits:
             raise NotAllowed("THERE IS NOTHING IN THAT DIRECTION.")
-        return self.game.to_location(exits[direction])
+        return to_location(self.game, exits[direction])
 
 
 class MoveUseCase:
@@ -106,7 +107,7 @@ class MoveUseCase:
         if direction not in exits:
             raise NotAllowed("YOU CAN'T GO THAT WAY.")
         target = exits[direction]
-        if target == MARKET and market_is_cleaning(game.clock):
+        if target == MARKET and market_is_cleaning(game.clock.now().minute):
             raise NotAllowed("THE MARKET IS CLOSED FOR CLEANING. COME BACK LATER.")
         state.walk_to(game.places[target])
         note = ""
@@ -114,12 +115,12 @@ class MoveUseCase:
             note = self.rat(state)
         if game.places[state.location].is_exit:
             state.win()
-            score = game.to_bag(state).score
+            score = to_bag(game, state).score
             game.high_scores.append(state.name, score, game.clock.now())
             game.finished_games.append(
                 {"name": state.name, "score": score, "moves": state.moves}
             )
-        return game.to_location(state.location, note)
+        return to_location(game, state.location, note)
 
     def rat(self, state: PlayerState) -> str:
         game = self.game
@@ -226,7 +227,7 @@ class LoginUseCase:
             state = game.players[player.sid]
         account.player_sid = state.sid
         self.game.account_store.put(account)
-        return game.to_player(state)
+        return to_player(game, state)
 
 
 class SendMessageUseCase:

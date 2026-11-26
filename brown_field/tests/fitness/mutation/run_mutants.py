@@ -36,6 +36,8 @@ WORLD = "brown_field/domain/world.py"
 BAG = "brown_field/domain/bag.py"
 NAMES = "brown_field/domain/names.py"
 PLAYER = "brown_field/domain/player.py"
+ACCOUNTS = "brown_field/domain/accounts.py"
+VIEWS = "brown_field/application/views.py"
 
 # (file, old text, new text, label). Each old text must occur exactly once.
 MUTANTS = [
@@ -51,12 +53,12 @@ MUTANTS = [
     (CONST, "RAT_CHANCE = 0.2", "RAT_CHANCE = 0.1", "rat chance 0.2 -> 0.1"),
     (CONST, '"BREAD": 5', '"BREAD": 4', "bread energy 5 -> 4"),
     (CONST, '"BEER": 3}', '"BEER": 4}', "beer energy 3 -> 4"),
-    (STATE, "clock.now().minute >= 50", "clock.now().minute >= 51", "market closes at 51"),
-    (STATE, "clock.now().minute >= 50", "clock.now().astimezone(timezone.utc).minute >= 50", "market reads UTC"),
+    (WORLD, "return minute >= 50", "return minute >= 51", "market closes at 51"),
+    (CASES, "market_is_cleaning(game.clock.now().minute)", "market_is_cleaning(game.clock.now().astimezone(__import__('datetime').timezone.utc).minute)", "market reads UTC"),
     (DB, 'os.environ.get("KATACOMBS_DB", "katacombs.db")', 'os.environ.get("KATACOMBS_DB", "game.db")', "default database file name"),
-    (STATE, "hashlib.sha256(password", "hashlib.sha3_256(password", "password hash sha256 -> sha3"),
+    (ACCOUNTS, "hashlib.sha256(password", "hashlib.sha3_256(password", "password hash sha256 -> sha3"),
     (STATE, "                # The world changed under an old save.\n                continue", "                pass", "old save at an unknown location loads"),
-    (STATE, 'f"{place.description} {note}".strip()', 'f"{place.description} {note}"', "description keeps a trailing space"),
+    (VIEWS, 'f"{place.description} {note}".strip()', 'f"{place.description} {note}"', "description keeps a trailing space"),
     (NAMES, '    name = name.strip().upper()', '    name = name.upper()', 'player name not stripped'),
     (CASES, "if len(self.game.players) >= MAX_PLAYERS:", "if len(self.game.players) > MAX_PLAYERS:", "player limit off by one"),
     (PLAYER, 'cheap = [sid for sid in self.bag if not items[sid].value]', 'cheap = [sid for sid in self.bag if items[sid].value < 10]', 'rat takes value < 10'),

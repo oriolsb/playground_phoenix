@@ -118,3 +118,11 @@ def test_the_open_manhole_connects_the_back_yard_and_the_katacombs():
     assert Direction.DOWN not in world.places["BACK YARD"].exits
     with pytest.raises(NotAllowed, match="IS ALREADY CLOSED"):
         world.close(manhole)
+
+
+@pytest.mark.parametrize("minute, closed", [(0, False), (49, False), (50, True), (59, True)])
+def test_the_market_closes_in_the_last_ten_minutes_with_no_clock(minute, closed):
+    """MOVE-6, decision 0020: a pure function of the minute."""
+    from brown_field.domain.world import market_is_cleaning
+
+    assert market_is_cleaning(minute) is closed
