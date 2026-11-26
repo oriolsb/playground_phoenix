@@ -55,6 +55,31 @@ class Player:
     location: Location
     bag: Bag
     has_won: bool = False
+    energy: int = 0
+
+
+@dataclass
+class Message:
+    """One chat line, as a player in the same location reads it."""
+
+    name: str
+    text: str
+    at: str
+
+
+@dataclass
+class Score:
+    """One finished game on the leaderboard."""
+
+    name: str
+    score: int
+    moves: int
+
+
+@dataclass
+class AccountView:
+    email: str
+    name: str
 
 
 class RegisterPlayer(Protocol):
@@ -95,3 +120,33 @@ class Move(Protocol):
 
 class SaveGame(Protocol):
     def execute(self, player_sid: str) -> str: ...
+
+
+class ViewPlayer(Protocol):
+    def execute(self, player_sid: str) -> Player: ...
+
+
+class ShowLeaderboard(Protocol):
+    def execute(self) -> list[Score]: ...
+
+
+class PickUp(Protocol):
+    """The legacy pickup of mobile client v1 (decision 0003)."""
+
+    def execute(self, player_sid: str, item_sid: str) -> str: ...
+
+
+class RegisterAccount(Protocol):
+    def execute(self, email: str, password: str, name: str) -> AccountView: ...
+
+
+class Login(Protocol):
+    def execute(self, email: str, password: str) -> Player: ...
+
+
+class SendMessage(Protocol):
+    def execute(self, player_sid: str, text: str) -> None: ...
+
+
+class ReadMessages(Protocol):
+    def execute(self, player_sid: str) -> list[Message]: ...

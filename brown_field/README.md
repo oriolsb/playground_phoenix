@@ -39,7 +39,9 @@ test against its rule.
 | --- | --- |
 | [`../docs/katacombs.md`](../docs/katacombs.md) | The original brief that the team built from. It is older than the code. |
 | `kata.py` | The domain model and the use-case ports. |
-| `game.py` | The implementation: the world, the rules, the accounts, the chat, an in-memory store, and a save to a SQLite file. |
+| `game.py` | The implementation: the world, the rules, the accounts, the chat, an in-memory store, and a save to a SQLite file. Since day 3 (decision 0012) it is the composition root, and the code lives in `core/` and `adapters/`. |
+| `core/` | Since day 3: the rules, the state and the use cases, with no I/O. Its outbound ports are in `core/ports.py`. |
+| `adapters/` | Since day 3: SQLite, the high-score file, the clock, `random` and the password hash. |
 | `api.py` | The REST API. |
 | `__init__.py` | Makes `brown_field` a package. |
 | `__main__.py` | Starts the REST API server. |
