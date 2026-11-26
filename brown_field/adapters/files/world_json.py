@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 
 from ...domain.world import Place, WorldData, check_world
-from ...kata import Action, Direction, Item
+from ...domain.types import Action, Direction, Item
 
 WORLD_FILE = Path(__file__).resolve().parents[2] / "spec" / "world.json"
 

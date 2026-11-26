@@ -44,3 +44,7 @@ Feature: The shape of the code behind the boundary
   @ENTRY-3
   Scenario: The port tier offers a use case for each command
     Then the structure check "port tier" finds no break
+
+  @ARCH-10
+  Scenario: A driven adapter imports only the outbound ports and the domain
+    Then the structure check "driven adapters" finds no break
