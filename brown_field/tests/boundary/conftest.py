@@ -36,10 +36,69 @@ def rows(db: Path, query: str, *args) -> list[tuple]:
 
 @then(parsers.parse('the database table "{table}" has the columns "{columns}"'))
 def the_table_has_the_columns(isolated_files, table, columns):
+    """Each column is "name" (TEXT) or "name TYPE"."""
     info = rows(isolated_files.db, f"PRAGMA table_info({table})")
-    assert [(column[1], column[2]) for column in info] == [
-        (name.strip(), "TEXT") for name in columns.split(",")
+    expected = []
+    for column in columns.split(","):
+        name, _, kind = column.strip().partition(" ")
+        expected.append((name, kind or "TEXT"))
+    assert [(column[1], column[2]) for column in info] == expected
+
+
+# --- Profiles and wins (STORE-4) ----------------------------------------------------
+
+
+@given("the database file of the legacy code, with the golden account")
+def the_legacy_database_file(play, golden, isolated_files):
+    """The golden files, then a fresh start on them: no profiles or wins table yet."""
+    tables = rows(isolated_files.db, "SELECT name FROM sqlite_master WHERE name IN ('profiles', 'wins')")
+    assert tables == [], tables
+    play.restart()
+
+
+@then(parsers.parse('the profiles table holds the profile sid of "{email}"'))
+def the_profiles_table_holds(play, isolated_files, email):
+    assert rows(isolated_files.db, "SELECT email, profile_sid FROM profiles WHERE email = ?", email) == [
+        (email, play.profiles[email])
     ]
+
+
+@then("the login answer carries a profile sid")
+def the_login_answer_carries_a_profile_sid(play):
+    assert play.response.status_code == 200, play.response.text
+    assert re.match(r"^\d{6}-\d{12}-\d{8}$", play.response.json()["profileSid"])
+
+
+@then(parsers.parse('the profiles table holds that profile sid for "{email}"'))
+def the_profiles_table_holds_that_sid(play, isolated_files, email):
+    sid = play.response.json()["profileSid"]
+    assert rows(isolated_files.db, "SELECT email FROM profiles WHERE profile_sid = ?", sid) == [(email,)]
+
+
+@then(parsers.parse(
+    'the wins table holds one win of "{email}" named "{name}" with score {score:d} and {moves:d} moves, at a UTC second'
+))
+def the_wins_table_holds(isolated_files, email, name, score, moves):
+    found = rows(isolated_files.db, "SELECT email, name, score, moves, at FROM wins")
+    assert len(found) == 1, found
+    assert found[0][:4] == (email, name, score, moves)
+    assert UTC_SECOND.match(found[0][4]), found[0][4]
+
+
+@then("the wins table is empty")
+def the_wins_table_is_empty(isolated_files):
+    assert rows(isolated_files.db, "SELECT * FROM wins") == []
+
+
+@then(parsers.parse('no row of the tables "{tables}" names "{email}"'))
+def no_row_names(isolated_files, tables, email):
+    for table in (t.strip() for t in tables.split(",")):
+        assert rows(isolated_files.db, f"SELECT * FROM {table} WHERE lower(email) = lower(?)", email) == [], table
+
+
+@then("the saves table holds no row for the player")
+def no_save_row(play, isolated_files):
+    assert rows(isolated_files.db, "SELECT * FROM saves WHERE player_sid = ?", play.sid()) == []
 
 
 @then(parsers.parse('the saves table holds one row for the player, named "{name}"'))

@@ -12,9 +12,25 @@ scenarios fail before the code. They are the four of
 refuses a tired player" (`MOVE-5`, decision 0011). Every other scenario
 must pass, before the code changes and after.
 
+Open change `accounts` (2026-11-26), normal mode: its scenarios fail
+before the code. They are every scenario of `rest/profiles.feature`,
+`rest/account_changes.feature` and `fitness/privacy.feature`; the new
+scenarios of `rest/accounts.feature` (`ACCOUNT-3` case variants,
+`ACCOUNT-7`, the profile sid of `ACCOUNT-1` and `ACCOUNT-4`) and of
+`boundary/storage.feature` (`STORE-4`). The shared steps "the account
+answer is" (`ACCOUNT-1`) and "the leaderboard shows" (`WIN-2`) now ask
+for `profileSid`, so every existing scenario that uses them fails too,
+until the code follows the modified rules. Once the code adds the key,
+`fitness/test_transcripts.py` and the contract tests will fail on it:
+record the transcripts again from the code of decision 0013 (decision
+0010), and add the key to `openapi.yaml` first (`/phoenix-kit:contract`).
+Today 55 tests fail and 214 pass; three new scenarios pass on purpose,
+because they guard behavior that holds before and after: an exact email
+match, and a wrong password refused in any letter case.
+
 Command of the canonical run: `uv run pytest brown_field/tests`.
 
-Approved: oriolsb, 2026-11-26, suite sha256:efd1b010e7bb7765
+Approved:
 
 Do not type this line by hand. After the review, a person runs
 `python3 phoenix-kit/scripts/phoenix_check.py approval stamp --by "<who>"`.
@@ -33,7 +49,7 @@ Do not type this line by hand. After the review, a person runs
 | PLAYER-1 | A new player wins on the route through the market (+1 more) | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/win.feature` |
 | PLAYER-2 | A client registers an account (+2 more) | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/accounts.feature`, `rest/players.feature` |
 | PLAYER-3 | The email check comes before the name check (+5 more) | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/accounts.feature`, `rest/players.feature` |
-| PLAYER-4 | An account name follows the player name rules: "<name>" (+2 more) | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/accounts.feature`, `rest/players.feature` |
+| PLAYER-4 | An account name follows the player name rules: "<name>" (+5 more) | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/account_changes.feature`, `rest/accounts.feature`, `rest/players.feature` |
 | PLAYER-5 | A login without an active player is refused when the game is full (+2 more) | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/accounts.feature`, `rest/players.feature` |
 | PLAYER-6 | The list of players shows every active player with energy (+1 more) | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/players.feature` |
 | PLAYER-7 | A player who quits is gone (+1 more) | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/players.feature` |
@@ -77,17 +93,27 @@ Do not type this line by hand. After the review, a person runs
 | ACT-16 | The key outside the back yard does nothing | api | durable | `rest/items.feature` |
 | ACT-17 | A new player wins on the route through the market | api | durable | `rest/win.feature` |
 | WIN-1 | A new player wins on the route through the market (+1 more) | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/win.feature` |
-| WIN-2 | The highest score comes first, and equal scores keep the order of the wins (+2 more) | api | durable | `rest/leaderboard.feature`, `rest/win.feature` |
+| WIN-2 | The highest score comes first, and equal scores keep the order of the wins (+4 more) | api | durable | `rest/account_changes.feature`, `rest/leaderboard.feature`, `rest/profiles.feature`, `rest/win.feature` |
 | WIN-3 | A new player wins on the route through the market (+1 more) | api | durable | `boundary/startup.feature`, `rest/win.feature` |
 | BOARD-1 | The highest score comes first, and equal scores keep the order of the wins | api | durable | `rest/leaderboard.feature` |
 | SAVE-1 | A save answers with the path of the database file (+1 more) | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/save.feature` |
 | SAVE-2 | A saved player comes back after a restart with the same state (+8 more) | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/save.feature` |
-| ACCOUNT-1 | A client registers an account (+2 more) | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/accounts.feature` |
+| ACCOUNT-1 | A client registers an account (+5 more) | api, port | durable (api); port while the seam holds | `boundary/storage.feature`, `ports/ports.feature`, `rest/account_changes.feature`, `rest/accounts.feature` |
 | ACCOUNT-2 | An email without @ is refused (+2 more) | api | durable | `rest/accounts.feature` |
-| ACCOUNT-3 | An email has one account | api | durable | `rest/accounts.feature` |
-| ACCOUNT-4 | The first login gives a new player at BRICK LANE (+8 more) | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/accounts.feature` |
+| ACCOUNT-3 | An email has one account (+2 more) | api | durable | `rest/accounts.feature` |
+| ACCOUNT-4 | The first login gives a new player at BRICK LANE (+10 more) | api, port | durable (api); port while the seam holds | `boundary/storage.feature`, `ports/ports.feature`, `rest/accounts.feature` |
 | ACCOUNT-5 | A wrong <case> is refused with one message (+1 more) | api, port | durable (api); port while the seam holds | `ports/ports.feature`, `rest/accounts.feature` |
 | ACCOUNT-6 | A login after a quit restores the snapshot (+4 more) | api | durable | `rest/accounts.feature` |
+| ACCOUNT-7 | A login ignores the letter case of the email: "<email>" (+7 more) | api | durable | `rest/account_changes.feature`, `rest/accounts.feature` |
+| ACCOUNT-8 | Anybody can read a profile with no win (+1 more) | api | durable | `rest/profiles.feature` |
+| ACCOUNT-9 | No public answer holds the email | api | durable (fitness) | `fitness/privacy.feature` |
+| ACCOUNT-10 | A win of an account's player counts for its profile (+4 more) | api | durable | `boundary/storage.feature`, `rest/profiles.feature` |
+| ACCOUNT-11 | A person changes the name of the account (+4 more) | api | durable | `rest/account_changes.feature` |
+| ACCOUNT-12 | A <command> with a wrong <case> is refused, and changes nothing | api | durable | `rest/account_changes.feature` |
+| ACCOUNT-13 | A deleted account can't log in, and its profile is gone (+6 more) | api | durable | `boundary/storage.feature`, `fitness/privacy.feature`, `rest/account_changes.feature` |
+| ACCOUNT-14 | A deleted account's wins stay on the leaderboard as DELETED PLAYER, in their rank (+1 more) | api | durable | `rest/account_changes.feature` |
+| ACCOUNT-15 | The email of a deleted account registers again, with a new and empty profile | api | durable | `rest/account_changes.feature` |
+| ACCOUNT-16 | An unknown profile sid is not found (+1 more) | api | durable | `rest/profiles.feature` |
 | CHAT-1 | A player sends a chat message (+1 more) | api | durable | `rest/chat.feature` |
 | CHAT-2 | The players at the location read its messages, oldest first (+1 more) | api | durable | `rest/chat.feature` |
 | CHAT-3 | Each chat message adds one to the move count | api | durable | `rest/chat.feature` |
@@ -96,6 +122,7 @@ Do not type this line by hand. After the review, a person runs
 | STORE-1 | A save writes one row to the saves table (+1 more) | - | durable | `boundary/storage.feature` |
 | STORE-2 | An account row fills in as the account is used | - | durable | `boundary/storage.feature` |
 | STORE-3 | A password is stored as its unsalted SHA-256 digest | - | durable | `boundary/storage.feature` |
+| STORE-4 | A registration writes a row to the profiles table (+4 more) | - | durable | `boundary/storage.feature` |
 | CONF-1 | Without KATACOMBS_DB, the database file is katacombs.db in the working directory (+1 more) | - | durable | `boundary/startup.feature` |
 | CONF-2 | Without KATACOMBS_HIGHSCORES, a win writes highscores.jsonl in the working directory | - | durable | `boundary/startup.feature` |
 | CONF-3 | python -m brown_field serves the API on 127.0.0.1, port 8000 | - | durable | `boundary/startup.feature` |
@@ -122,6 +149,7 @@ a decision record that traces to it.
 | --- | --- | --- |
 | `fitness/test_spec_status.py` | Each rule has one status; accepted cites its record; contested asks its question; the banners count right | `uv run pytest brown_field/tests -m fitness` |
 | `fitness/architecture.feature` (decision 0012) | `OPS-2`: the 12 use cases of the port tier are defined in `brown_field/core/`, and no core module imports `sqlite3`, `os`, `random`, `hashlib`, `json` or a web framework, or calls `open()` or `.now()`. `OPS-3`: `api.py` reads no `game.<attribute>`, and each of its 16 routes calls a use case | `uv run pytest brown_field/tests -m architecture` |
+| `fitness/privacy.feature` (decision 0013) | `ACCOUNT-9`: after a session with a login, a chat, a win and a change of name, no answer of the leaderboard, the players, the profiles, or a location, bag or chat holds the email, in any letter case. `ACCOUNT-13`: after a deletion, those answers and the database file, as raw bytes, hold neither the email, the name nor the player sid, before and after a restart | `uv run pytest brown_field/tests -m fitness -k privacy` |
 | `fitness/test_invariants.py` (decision 0010) | After any random sequence of commands through the API: no item in two places, score = gold + values, energy 0 to 20, at most 8 slots and 20 players, gold never lower, a win never undone, every answer in the contract | `uv run pytest -k invariants`; longer with `KATACOMBS_EXAMPLES=2000` |
 | `fitness/test_transcripts.py` (decision 0010) | 7 sessions that the legacy code answered (6 random, 1 scripted, 1,896 lines with the files) give the same answers and files | `uv run pytest -k transcripts`; record again only with `golden/make_transcripts.py`, from the code of a decision |
 | `fitness/test_differential.py` (decision 0012) | The tree and a baseline revision (default `10a5221`) answer the same 1,818 REST sessions alike: every answer, and the rows of both tables and the high-score file. The sessions are 50 random, 50 rat and the scripted one, under 18 conditions (three time zones, Asia/Kolkata included; three start times around the market's cleaning window; the rat stopped or seeded). A control with the market reading UTC must differ | `KATACOMBS_DIFFERENTIAL=1 uv run pytest brown_field/tests -m differential` (about 10 minutes; `KATACOMBS_BASELINE`, `KATACOMBS_DIFF_SEEDS`) |
@@ -176,6 +204,10 @@ one records today's behavior; a decision record must confirm or change it.
 | CONF-3 | The address when port 8000 is taken | The scenario skips itself when another process, such as a development server, holds the port |
 | STORE-3 | That the digest can log in after a restart | The golden account in `harness/test_fixtures.py` checks it on the legacy file |
 | BAG-3 | A fourth item of the same name in one slot | The world holds at most 3 items with one name (BREAD) |
+| ACCOUNT-10 | The best score of two or more wins | An account's player can win only once today: after a win, the login gives back the won player (the snapshot or the active one, `ACCOUNT-4`), who can't move (`MOVE-7`). `gamesWon` is 0 or 1 until a rule lets an account start a new game |
+| ACCOUNT-13 | The copies outside the game: the high-score file, the marketing job's copies, backups, logs | The high-score file keeps the name by decision (`ACCOUNT-14`, review of 2026-11-26); the rest is outside this repository |
+| ACCOUNT-9 | A read route added later | The fitness function lists the read routes by hand; a new route needs a new line |
+| ACCOUNT-7 | Case folding beyond ASCII (for example `ß`, `İ`) | The examples use ASCII letters; the rule says "letter case" and fixes no folding |
 
 ## Ephemeral tests that the audit found
 

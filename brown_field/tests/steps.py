@@ -12,7 +12,9 @@ A step about "the player" acts for the last player who started or logged in.
 A step about a quoted name ("BO") acts for that player.
 """
 
+import hashlib
 import json
+import re
 import sqlite3
 
 import pytest
@@ -29,6 +31,8 @@ WHO = r'(?:the player|"(?P<name>[^"]+)")'
 TUNNEL_ROUTE = ["south", "east", "down", "east", "north", "east"]
 # The shape of the "pick" action on the wire, for the item steps.
 ACTIONS = {"takes": "pick", "drops": "drop", "opens": "open", "closes": "close", "uses": "use"}
+# The digit form of every sid: player, item and profile (PLAYER-1, ACCOUNT-1).
+SID_FORM = re.compile(r"^\d{6}-\d{12}-\d{8}$")
 
 
 class Play:
@@ -43,6 +47,10 @@ class Play:
         self.response = None
         self.previous_sid: str | None = None
         self.last_item: str | None = None
+        # The profile sid of each account, by the email it was registered with.
+        self.profiles: dict[str, str] = {}
+        # The profile sid an account had when it was deleted.
+        self.deleted_profiles: dict[str, str] = {}
 
     def sid(self, name: str | None = None) -> str:
         return self.players[name.upper()] if name else self.players[self.current]
@@ -149,6 +157,28 @@ def has_won_through_the_tunnels(play, name):
 def an_account(play, email, password, name):
     response = play.client.post("/accounts", json={"email": email, "password": password, "name": name})
     assert response.status_code == 201, response.text
+    # Setup only: the answer's shape is checked by "the account answer is" (ACCOUNT-1).
+    play.profiles[email] = response.json().get("profileSid")
+
+
+@given(parsers.parse('the database file holds an account "{email}" with the password "{password}" and the name "{name}"'))
+def the_database_holds_an_account(play, isolated_files, email, password, name):
+    """An account as a server before ACCOUNT-3 could store it (STORE-2, STORE-3).
+
+    Written straight into the table, so two emails that differ only in letter
+    case can both exist. The server is restarted, so it reads the row.
+    """
+    digest = hashlib.sha256(password.encode("utf-8")).hexdigest()
+    with sqlite3.connect(isolated_files.db) as connection:
+        # The table of STORE-2, as the legacy server creates it on first use.
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS accounts (email TEXT PRIMARY KEY, password_hash TEXT NOT NULL,"
+            " name TEXT NOT NULL, player_sid TEXT, snapshot TEXT)"
+        )
+        connection.execute(
+            "INSERT INTO accounts (email, password_hash, name) VALUES (?, ?, ?)", (email, digest, name)
+        )
+    play.restart()
 
 
 @given("the golden database holds a save from before 2023")
@@ -231,6 +261,8 @@ def a_client_starts_with_length(play, length):
 @when(parsers.re(r'a client registers "(?P<email>[^"]*)" with the password "(?P<password>[^"]*)" and the name "(?P<name>[^"]*)"'))
 def a_client_registers(play, email, password, name):
     play.response = play.client.post("/accounts", json={"email": email, "password": password, "name": name})
+    if play.response.status_code == 201:
+        play.profiles[email] = play.response.json().get("profileSid")
 
 
 @when(parsers.parse('a client logs in as "{email}" with the password "{password}"'))
@@ -240,6 +272,33 @@ def a_client_logs_in(play, email, password):
         name = play.response.json()["name"]
         play.previous_sid = play.players.get(name)
         play.add(name, play.response.json()["sid"])
+
+
+@when(parsers.re(r'a client changes the name of "(?P<email>[^"]*)" with the password "(?P<password>[^"]*)" to "(?P<name>[^"]*)"'))
+def a_client_changes_the_name(play, email, password, name):
+    play.response = play.client.put("/accounts/name", json={"email": email, "password": password, "name": name})
+
+
+@when(parsers.parse('a client deletes the account "{email}" with the password "{password}"'))
+def a_client_deletes_the_account(play, email, password):
+    play.response = play.client.post("/accounts/delete", json={"email": email, "password": password})
+    if play.response.status_code == 200 and email in play.profiles:
+        play.deleted_profiles[email] = play.profiles.pop(email)
+
+
+@when(parsers.parse('a client reads the profile of "{email}"'))
+def a_client_reads_the_profile(play, email):
+    play.response = play.client.get(f"/profiles/{play.profiles[email]}")
+
+
+@when(parsers.parse('a client reads the deleted profile of "{email}"'))
+def a_client_reads_the_deleted_profile(play, email):
+    play.response = play.client.get(f"/profiles/{play.deleted_profiles[email]}")
+
+
+@when(parsers.parse('a client reads the profile sid "{sid}"'))
+def a_client_reads_the_profile_sid(play, sid):
+    play.response = play.client.get(f"/profiles/{sid}")
 
 
 @when(parsers.parse('a client asks for the item "{item}"'))
@@ -334,8 +393,78 @@ def the_new_player_is(play, name, title, energy):
 
 @then(parsers.parse('the account answer is "{email}" named "{name}"'))
 def the_account_answer(play, email, name):
+    """ACCOUNT-1: the email as typed, the name, and a new profile sid in the sid form."""
     assert play.response.status_code == 201, play.response.text
-    assert play.response.json() == {"email": email, "name": name}
+    body = play.response.json()
+    assert set(body) == {"email", "name", "profileSid"}, body
+    assert (body["email"], body["name"]) == (email, name)
+    assert SID_FORM.match(body["profileSid"]), body["profileSid"]
+
+
+@then(parsers.parse('the name answer is "{email}" named "{name}"'))
+def the_name_answer(play, email, name):
+    """ACCOUNT-11: the stored email, the new name, and the account's profile sid."""
+    assert play.response.status_code == 200, play.response.text
+    assert play.response.json() == {"email": email, "name": name, "profileSid": play.profiles[email]}
+
+
+@then(parsers.parse('the login answer carries the profile sid of "{email}"'))
+def the_login_answer_carries_the_profile_sid(play, email):
+    assert play.response.status_code == 200, play.response.text
+    assert play.response.json()["profileSid"] == play.profiles[email]
+
+
+@then(parsers.parse('the login answer is the player named "{name}"'))
+def the_login_answer_is_the_player_named(play, name):
+    assert play.response.status_code == 200, play.response.text
+    assert play.response.json()["name"] == name
+
+
+@then(parsers.parse('the profiles of "{first}" and "{second}" differ'))
+def the_profiles_differ(play, first, second):
+    assert play.profiles[first] != play.profiles[second]
+
+
+@then(parsers.parse('the profile of "{email}" differs from the deleted one'))
+def the_profile_differs_from_the_deleted_one(play, email):
+    assert SID_FORM.match(play.profiles[email])
+    assert play.profiles[email] != play.deleted_profiles[email]
+
+
+@then(parsers.re(r'the profile shows the name "(?P<name>[^"]+)", (?P<won>\d+) games? won and the best score (?P<best>\d+|none)'))
+def the_profile_shows(play, name, won, best):
+    """ACCOUNT-8: exactly these four keys; no email (ACCOUNT-9)."""
+    assert play.response.status_code == 200, play.response.text
+    body = play.response.json()
+    assert set(body) == {"profileSid", "name", "gamesWon", "bestScore"}, body
+    assert (body["name"], body["gamesWon"]) == (name, int(won))
+    assert body["bestScore"] == (None if best == "none" else int(best))
+
+
+@then(parsers.parse('the profile of "{email}" shows the name "{name}", {won:d} games won'))
+def the_profile_of_shows(play, email, name, won):
+    body = play.client.get(f"/profiles/{play.profiles[email]}").json()
+    assert (body["name"], body["gamesWon"]) == (name, won)
+
+
+@then(parsers.parse('the profile sid "{sid}" is not found'))
+def the_profile_sid_is_not_found(play, sid):
+    assert play.response.status_code == 404, play.response.text
+    assert play.response.json() == {"code": 404, "message": f"PROFILE {sid} NOT FOUND."}
+
+
+@then("the player sid is not found as a profile sid")
+def the_player_sid_is_not_a_profile_sid(play):
+    sid = play.sid()
+    assert play.response.status_code == 404, play.response.text
+    assert play.response.json() == {"code": 404, "message": f"PROFILE {sid} NOT FOUND."}
+
+
+@then(parsers.parse('the deleted profile of "{email}" is not found'))
+def the_deleted_profile_is_not_found(play, email):
+    sid = play.deleted_profiles[email]
+    assert play.response.status_code == 404, play.response.text
+    assert play.response.json() == {"code": 404, "message": f"PROFILE {sid} NOT FOUND."}
 
 
 @then(parsers.re(r"the answer names the same player as before"))
@@ -381,6 +510,12 @@ def the_answer_shows_the_location(play, title):
 def the_exits_are(play, exits):
     """The exits as a set: no rule fixes their order."""
     assert sorted(play.game.look(play.sid())["exits"]) == sorted(names(exits))
+
+
+@then(parsers.re(r'the location of "(?P<name>[^"]+)" holds (?P<count>\d+) "(?P<item>[^"]+)"'))
+def the_location_of_holds(play, name, count, item):
+    here = [i["name"] for i in play.game.look(play.sid(name))["items"]]
+    assert here.count(item) == int(count), here
 
 
 @then(parsers.re(r'the location holds (?P<count>\d+) "(?P<item>[^"]+)"'))
@@ -466,7 +601,22 @@ def the_player_has_won(play):
 
 @then(parsers.parse('the leaderboard shows "{name}" with score {score:d} and {moves:d} moves'))
 def the_leaderboard_shows(play, name, score, moves):
-    assert {"name": name, "score": score, "moves": moves} in play.client.get("/leaderboard").json()
+    """WIN-2: a finished game with these values, and the key profileSid."""
+    board = play.client.get("/leaderboard").json()
+    found = [e for e in board if (e.get("name"), e.get("score"), e.get("moves")) == (name, score, moves)]
+    assert found, board
+    assert set(found[0]) == {"name", "score", "moves", "profileSid"}, found[0]
+
+
+@then(parsers.re(
+    r'the leaderboard shows "(?P<name>[^"]+)" with score (?P<score>\d+) and (?P<moves>\d+) moves'
+    r' (?:for the profile of "(?P<email>[^"]+)"|with no profile)'
+))
+def the_leaderboard_shows_the_profile(play, name, score, moves, email):
+    board = play.client.get("/leaderboard").json()
+    expected = {"name": name, "score": int(score), "moves": int(moves),
+                "profileSid": play.profiles[email] if email else None}
+    assert expected in board, board
 
 
 @then(parsers.parse('the leaderboard lists "{players}" in this order'))
@@ -500,3 +650,18 @@ def the_high_score_file_holds(isolated_files, name, score):
     assert len(mine) == 1
     assert mine[0]["score"] == score
     assert set(mine[0]) == {"name", "score", "at"}
+
+
+@pytest.fixture
+def noted() -> dict:
+    return {}
+
+
+@when("the high-score file is noted")
+def the_high_score_file_is_noted(isolated_files, noted):
+    noted["highscores"] = isolated_files.highscores.read_bytes()
+
+
+@then("the high-score file is byte for byte as noted")
+def the_high_score_file_is_as_noted(isolated_files, noted):
+    assert isolated_files.highscores.read_bytes() == noted["highscores"]

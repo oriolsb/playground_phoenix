@@ -31,6 +31,85 @@ Feature: Accounts keep a person's game across quits and restarts
     When a client registers "ana@example.org" with the password "other" and the name "bo"
     Then the request is refused with status 405 and the message "THIS EMAIL IS TAKEN."
 
+  @api @ACCOUNT-3
+  Scenario Outline: An email in another letter case is taken: "<email>"
+    Given an account "ana@example.org" with the password "pw" and the name "ana"
+    When a client registers "<email>" with the password "other" and the name "bo"
+    Then the request is refused with status 405 and the message "THIS EMAIL IS TAKEN."
+
+    Examples:
+      | email           |
+      | Ana@example.org |
+      | ANA@EXAMPLE.ORG |
+      | ana@Example.Org |
+
+  @api @ACCOUNT-3 @ACCOUNT-7
+  Scenario: Case variants stored before stay as separate accounts
+    Given the database file holds an account "Ana@example.org" with the password "one" and the name "first"
+    And the database file holds an account "ana@example.org" with the password "two" and the name "second"
+    When a client logs in as "Ana@example.org" with the password "one"
+    Then the login answer is the player named "FIRST"
+    When a client logs in as "ana@example.org" with the password "two"
+    Then the login answer is the player named "SECOND"
+
+  @api @ACCOUNT-7 @ACCOUNT-4
+  Scenario Outline: A login ignores the letter case of the email: "<email>"
+    Given an account "ana@example.org" with the password "pw" and the name "ana"
+    When a client logs in as "<email>" with the password "pw"
+    Then the new player is named "ANA" at "BRICK LANE" with energy 12
+
+    Examples:
+      | email           |
+      | Ana@example.org |
+      | ANA@EXAMPLE.ORG |
+
+  @api @ACCOUNT-7 @ACCOUNT-5
+  Scenario: A login in another letter case with a wrong password is refused
+    Given an account "ana@example.org" with the password "pw" and the name "ana"
+    When a client logs in as "ANA@EXAMPLE.ORG" with the password "wrong"
+    Then the request is refused with status 405 and the message "WRONG EMAIL OR PASSWORD."
+
+  @api @ACCOUNT-7 @ACCOUNT-5
+  Scenario: An exact match comes first, even when its password is wrong
+    # ACCOUNT-7 applies only when no account matches the email exactly.
+    Given the database file holds an account "Ana@example.org" with the password "one" and the name "first"
+    And the database file holds an account "ana@example.org" with the password "two" and the name "second"
+    When a client logs in as "ana@example.org" with the password "one"
+    Then the request is refused with status 405 and the message "WRONG EMAIL OR PASSWORD."
+
+  @api @ACCOUNT-7
+  Scenario: Without an exact match, the case variant whose password matches logs in
+    Given the database file holds an account "Ana@example.org" with the password "one" and the name "first"
+    And the database file holds an account "ana@example.org" with the password "two" and the name "second"
+    When a client logs in as "ANA@EXAMPLE.ORG" with the password "two"
+    Then the login answer is the player named "SECOND"
+
+  @api @ACCOUNT-7
+  Scenario: Without an exact match, two variants with one password give the first one stored
+    Given the database file holds an account "Ana@example.org" with the password "pw" and the name "first"
+    And the database file holds an account "ana@example.org" with the password "pw" and the name "second"
+    When a client logs in as "ANA@EXAMPLE.ORG" with the password "pw"
+    Then the login answer is the player named "FIRST"
+
+  @api @ACCOUNT-1
+  Scenario: Each account gets its own profile sid
+    When a client registers "ana@example.org" with the password "pw" and the name "ana"
+    And a client registers "bo@example.org" with the password "pw" and the name "bo"
+    Then the account answer is "bo@example.org" named "BO"
+    And the profiles of "ana@example.org" and "bo@example.org" differ
+
+  @api @ACCOUNT-4
+  Scenario: Every login answer carries the account's profile sid, after a restart too
+    Given an account "ana@example.org" with the password "pw" and the name "ana"
+    When a client logs in as "ana@example.org" with the password "pw"
+    Then the login answer carries the profile sid of "ana@example.org"
+    When the player quits
+    And a client logs in as "ana@example.org" with the password "pw"
+    Then the login answer carries the profile sid of "ana@example.org"
+    When the server restarts
+    And a client logs in as "ANA@EXAMPLE.ORG" with the password "pw"
+    Then the login answer carries the profile sid of "ana@example.org"
+
   @api @PLAYER-3 @ACCOUNT-1
   Scenario Outline: An account name of 1 to 50 characters is accepted: <length> characters
     When a client registers "ana@example.org" with the password "pw" and the name "<name>"
