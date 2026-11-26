@@ -4,7 +4,7 @@ The world itself is data, in `brown_field/spec/world.json`. A title or an item
 sid appears here only when a rule names it.
 """
 
-from ..kata import Direction
+from .types import Direction
 
 BAG_SLOTS = 8
 ITEMS_PER_SLOT = 3

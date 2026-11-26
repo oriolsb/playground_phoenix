@@ -1,32 +1,22 @@
+"""The inbound ports of Katacombs, and the view models they answer.
+
+The domain owns `Direction`, `Action`, `Item` and the error types (decision
+0018). This module re-exports them, so their public names stay the same.
+"""
+
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Protocol
 
+from .domain.errors import InvalidName, ItemNotFound, KatacombsError, NotAllowed, PlayerNotFound
+from .domain.types import Action, Direction, Item
 
-class Direction(Enum):
-    NORTH = "north"
-    SOUTH = "south"
-    EAST = "east"
-    WEST = "west"
-    UP = "up"
-    DOWN = "down"
-
-
-class Action(Enum):
-    OPEN = "open"
-    CLOSE = "close"
-    PICK = "pick"
-    DROP = "drop"
-    USE = "use"
-
-
-@dataclass
-class Item:
-    sid: str
-    name: str
-    description: str
-    actions: list[Action]
-    value: int = 0
+__all__ = [
+    "AccountView", "Action", "Bag", "ChatLine", "Direction", "FinishedGame", "InspectBag",
+    "InspectItem", "InvalidName", "Item", "ItemNotFound", "KatacombsError", "LegacyPickup",
+    "ListPlayers", "Location", "Login", "LookAround", "LookInDirection", "Move", "NotAllowed",
+    "Player", "PlayerNotFound", "QuitGame", "ReadMessages", "RegisterAccount", "RegisterPlayer",
+    "SaveGame", "SendMessage", "ShowLeaderboard", "UseItem",
+]
 
 
 @dataclass

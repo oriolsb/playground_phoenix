@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 
-from ..kata import Direction, Item
+from .types import Direction, Item
 from .constants import BACK_YARD, KATACOMBS, KEY, MANHOLE, OPPOSITE
 from .errors import NotAllowed
 
