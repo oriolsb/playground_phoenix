@@ -233,17 +233,15 @@ def state_reads(tree: ast.AST) -> list[tuple[int, str, str]]:
 
 
 def test_the_rest_adapter_holds_no_rule_and_changes_no_state():
-    """ARCH-5: routes reach the game state only through use cases.
+    """ARCH-5: routes reach the game state only through the ports.
 
-    The one exception: the energy gate of MOVE-5 in the route `move`, while
-    decision 0011 is proposed.
+    Since decision 0019 the adapter receives only the ports, so no route names
+    the game. The MOVE-5 gate reads the energy through `InspectBag`.
     """
     rest = PACKAGE / "adapters" / "rest"
     broken = []
     for path in sorted(rest.rglob("*.py")):
         for line, attribute, function in state_reads(ast.parse(path.read_text(encoding="utf-8"))):
-            if (function, attribute) == ("move", "players"):
-                continue
             broken.append(f"{path.relative_to(PACKAGE.parent)}:{line}: {function} reads game.{attribute}")
     assert broken == [], "\n".join(broken)
 
@@ -279,3 +277,17 @@ def test_kata_re_exports_the_domain_types_as_the_same_objects():
         assert getattr(kata, name) is getattr(types, name), name
     for name in ("KatacombsError", "PlayerNotFound", "ItemNotFound", "InvalidName", "NotAllowed"):
         assert getattr(kata, name) is getattr(errors, name), name
+
+
+def test_the_rest_adapter_imports_only_the_ports():
+    """ARCH-8: nothing under adapters/rest/ imports the application or the domain."""
+    broken = []
+    for path in sorted((PACKAGE / "adapters" / "rest").rglob("*.py")):
+        parts = module_name(path)
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        broken += [
+            f"{path.relative_to(PACKAGE.parent)}:{line}: imports {'.'.join(target)}"
+            for line, target in imported(tree, parts, path.name == "__init__.py")
+            if target[0] == "brown_field" and layer_of(target) in ("application", "domain")
+        ]
+    assert broken == [], "\n".join(broken)
