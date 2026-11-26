@@ -1,7 +1,7 @@
 """Break the game-server one rule at a time, and report each break that no test sees.
 
 A fitness function of the Evaluation (decision 0010). Each mutant changes one
-line of `brown_field/game.py` or `brown_field/api.py` in a copy of the package,
+line of `brown_field/game.py`, `brown_field/api.py` or an adapter in a copy of the package,
 and runs the suite there. A killed mutant fails a test; a surviving one passes
 every test, so a regenerated game could make that change in silence.
 
@@ -27,6 +27,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]
 G, A = "brown_field/game.py", "brown_field/api.py"
+HS = "brown_field/adapters/files/high_scores.py"
 
 # (file, old text, new text, label). Each old text must occur exactly once.
 MUTANTS = [
@@ -42,8 +43,8 @@ MUTANTS = [
     (G, "RAT_CHANCE = 0.2", "RAT_CHANCE = 0.1", "rat chance 0.2 -> 0.1"),
     (G, '"BREAD": 5', '"BREAD": 4', "bread energy 5 -> 4"),
     (G, '"BEER": 3}', '"BEER": 4}', "beer energy 3 -> 4"),
-    (G, "datetime.now().minute >= 50", "datetime.now().minute >= 51", "market closes at 51"),
-    (G, "datetime.now().minute >= 50", "datetime.now(timezone.utc).minute >= 50", "market reads UTC"),
+    (G, "clock.now().minute >= 50", "clock.now().minute >= 51", "market closes at 51"),
+    (G, "clock.now().minute >= 50", "clock.now().astimezone(timezone.utc).minute >= 50", "market reads UTC"),
     (G, 'os.environ.get("KATACOMBS_DB", "katacombs.db")', 'os.environ.get("KATACOMBS_DB", "game.db")', "default database file name"),
     (G, "hashlib.sha256(password", "hashlib.sha3_256(password", "password hash sha256 -> sha3"),
     (G, "                # The world changed under an old save.\n                continue", "                pass", "old save at an unknown location loads"),
@@ -62,7 +63,7 @@ MUTANTS = [
     (G, '"NOTHING HAPPENS."', '"NOTHING HAPPENED."', "nothing-happens message"),
     (G, "state.energy = min(MAX_ENERGY, state.energy + ENERGY_FROM[item.name])", "state.energy = state.energy + ENERGY_FROM[item.name]", "no energy cap"),
     (G, "                game.disconnect(BACK_YARD, Direction.DOWN)", "                pass", "closing the manhole keeps the exit"),
-    (G, '"at": datetime.now(timezone.utc).isoformat(timespec="seconds"),\n    }\n    with open', '"at": datetime.now(timezone.utc).isoformat(),\n    }\n    with open', "high-score time with microseconds"),
+    (HS, '"at": at.astimezone(timezone.utc).isoformat(timespec="seconds"),', '"at": at.astimezone(timezone.utc).isoformat(),', "high-score time with microseconds"),
     (G, "if sid not in self.players and sid not in self.items:", "if True:", "sid collision check removed"),
     (G, "if (place.title, direction) in ONE_WAY:\n                continue", "if True:\n                continue", "world check disabled"),
     (G, "            if account.player_sid == player_sid:\n                return account", "            if account.player_sid:\n                return account", "a quit finds the first account with a player"),

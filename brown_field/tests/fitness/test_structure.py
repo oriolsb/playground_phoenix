@@ -170,3 +170,21 @@ def test_the_port_check_sees_a_planted_break(tmp_path):
     )
     result = mypy(planted)
     assert result.returncode == 1 and "planted_check.py:5" in result.stdout, result.stdout
+
+
+def test_only_adapters_read_the_clock_draw_chance_or_open_files():
+    """ARCH-3: the clock, `random` and `open` appear only under adapters/."""
+    broken = []
+    for path in code_modules():
+        parts = module_name(path)
+        if layer_of(parts) == "adapters":
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        where = path.relative_to(PACKAGE.parent)
+        broken += [f"{where}:{line}: calls {call}" for line, call in io_calls(tree)]
+        broken += [
+            f"{where}:{line}: imports random"
+            for line, target in imported(tree, parts, path.name == "__init__.py")
+            if target[0] == "random"
+        ]
+    assert broken == [], "\n".join(broken)
