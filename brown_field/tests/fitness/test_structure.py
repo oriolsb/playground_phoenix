@@ -23,7 +23,8 @@ PACKAGE = Path(__file__).resolve().parents[2]
 NOT_CODE = {"tests", "web", "spec", "__pycache__"}
 
 # Inner first. A module may import its own layer and every layer before it.
-LAYERS = ("kata", "domain", "application", "adapters", "root")
+# The domain is innermost; the ports (kata.py) sit outside it (decision 0018).
+LAYERS = ("domain", "kata", "application", "adapters", "root")
 RANK = {name: rank for rank, name in enumerate(LAYERS)}
 NO_IO = {"domain", "application"}
 IO_MODULES = {"sqlite3", "os", "fastapi", "pydantic", "uvicorn", "random", "starlette"}
@@ -134,7 +135,8 @@ def test_each_layer_imports_only_the_layers_inside_it():
         (["brown_field", "application", "move"], "import sqlite3\n", "imports sqlite3"),
         (["brown_field", "application", "move"], "from datetime import datetime\ndatetime.now()\n", "calls datetime.now()"),
         (["brown_field", "domain", "bag"], "open('x')\n", "calls open()"),
-        (["brown_field", "kata"], "from brown_field.domain import errors\n", "imports brown_field.domain"),
+        (["brown_field", "domain", "world"], "from ..kata import Item\n", "imports brown_field.kata"),
+        (["brown_field", "kata"], "from brown_field.application import state\n", "imports brown_field.application"),
     ],
 )
 def test_the_import_check_sees_a_planted_break(parts, source, expected):
@@ -250,3 +252,30 @@ def test_the_rest_check_sees_a_planted_rule():
     """ARCH-5: a route that writes the state is found, and named."""
     planted = "def build_app(game):\n    def send_message(sid):\n        game.chat.append(sid)\n"
     assert state_reads(ast.parse(planted)) == [(3, "chat", "send_message")]
+
+
+def test_the_domain_imports_nothing_outside_the_domain():
+    """ARCH-7: no module of the domain imports a module outside brown_field/domain/."""
+    broken = []
+    for path in code_modules():
+        parts = module_name(path)
+        if layer_of(parts) != "domain":
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        broken += [
+            f"{path.relative_to(PACKAGE.parent)}:{line}: imports {'.'.join(target)}"
+            for line, target in imported(tree, parts, path.name == "__init__.py")
+            if target[0] == "brown_field" and layer_of(target) != "domain"
+        ]
+    assert broken == [], "\n".join(broken)
+
+
+def test_kata_re_exports_the_domain_types_as_the_same_objects():
+    """ARCH-7: the frozen names of kata.py are the domain's own objects."""
+    from brown_field import kata
+    from brown_field.domain import errors, types
+
+    for name in ("Item", "Action", "Direction"):
+        assert getattr(kata, name) is getattr(types, name), name
+    for name in ("KatacombsError", "PlayerNotFound", "ItemNotFound", "InvalidName", "NotAllowed"):
+        assert getattr(kata, name) is getattr(errors, name), name

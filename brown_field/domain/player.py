@@ -6,7 +6,7 @@ MOVE-2, MOVE-3, MOVE-7, GOLD-1, GOLD-2, ACT-3..7, ACT-15, ACT-17, MOVE-8.
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from ..kata import Item
+from .types import Item
 from .bag import has_room
 from .constants import ENERGY_FROM, MAX_ENERGY, RAT_CHANCE, START_ENERGY
 from .errors import NotAllowed
