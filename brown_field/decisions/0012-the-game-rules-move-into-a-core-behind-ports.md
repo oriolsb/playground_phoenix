@@ -1,12 +1,13 @@
 # 0012 — The game rules move into a core behind ports, and the REST adapter keeps no rule
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-26
 - **Need:** business. Product, for the features that come next: more
   accounts, more chat, and a subscription of a type not known yet. Each
   one needs its own place, and the existing rules must stay as they are.
 - **Traces to:** `OPS-2`, `OPS-3`, `MOVE-5`, `ENTRY-1`, `ENTRY-2`, `CONF-1`, `CONF-2`.
-- **Change:** `modular-core`.
+- **Change:** `modular-core`. Accepted on 2026-11-26 by oriolsb ("current
+  architecture is fine").
 - **Evidence (legacy code only):**
   - `game.py:1-13`: the module that holds every rule imports `sqlite3`,
     `os`, `random`, `hashlib` and `json`.

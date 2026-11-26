@@ -14,7 +14,7 @@ must pass, before the code changes and after.
 
 Command of the canonical run: `uv run pytest brown_field/tests`.
 
-Approved:
+Approved: oriolsb, 2026-11-26, suite sha256:efd1b010e7bb7765
 
 Do not type this line by hand. After the review, a person runs
 `python3 phoenix-kit/scripts/phoenix_check.py approval stamp --by "<who>"`.
