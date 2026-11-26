@@ -1,13 +1,13 @@
 # 0011 — Where the energy gate lives, and at which energy it closes
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-11-26
 - **Need:** operational. Day 3 restructures the code behind the ports; the
   move rule must hold the same for every caller. The comment ties the gate
   to the mobile release, so mobile client v1 and the web client are the
   callers with the need.
 - **Traces to:** `MOVE-5`, `WEB-MOVE-2`, `MOVE-2`, `ACT-15`.
-- **Change:** None. Open for the group: no code changes until it is accepted.
+- **Change:** `modular-core`. Accepted on 2026-11-26; the change moves the gate.
 - **Evidence (legacy code only):**
   - `api.py:210-214`, "Added for the mobile release: a tired player cannot
     move." The REST route refuses a move at energy 0 or less, before it
@@ -44,7 +44,7 @@ the game has no other way to restore energy (ACT-15).
 
 ## Decision
 
-**Proposed, for the group to accept or change:**
+**Accepted on 2026-11-26:**
 
 1. **The gate lives in the move port** (`MoveUseCase`), as the first check
    after the player is found. It runs before the win check, as today.

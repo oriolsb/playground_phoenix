@@ -90,7 +90,34 @@
         },
         "value": { "type": "integer", "minimum": 0, "description": "MOVE-8: the rat takes only an item of value 0." },
         "goldInside": { "type": "integer", "minimum": 1, "description": "GOLD-2. Added on the first opening by each player." },
-        "locked": { "const": true, "description": "ACT-10, ACT-14. The item starts locked." }
+        "locked": { "const": true, "description": "ACT-10, ACT-14. The item starts locked." },
+        "use": {
+          "description": "WORLD-1, WORLD-3. What the use action does with the item in the bag. Without it, a use answers NOTHING HAPPENS (ACT-16).",
+          "oneOf": [
+            {
+              "description": "ACT-14. In the location `where`, the use unlocks the item `unlocks`; the item stays in the bag.",
+              "type": "object",
+              "required": ["unlocks", "where", "message", "alreadyMessage"],
+              "additionalProperties": false,
+              "properties": {
+                "unlocks": { "$ref": "#/$defs/sid" },
+                "where": { "$ref": "#/$defs/title" },
+                "message": { "type": "string", "minLength": 1 },
+                "alreadyMessage": { "type": "string", "minLength": 1 }
+              }
+            },
+            {
+              "description": "ACT-15. The use adds `energy`, up to the maximum of 20, and the item leaves the bag.",
+              "type": "object",
+              "required": ["energy", "message"],
+              "additionalProperties": false,
+              "properties": {
+                "energy": { "type": "integer", "minimum": 1 },
+                "message": { "type": "string", "minLength": 1 }
+              }
+            }
+          ]
+        }
       }
     }
   }

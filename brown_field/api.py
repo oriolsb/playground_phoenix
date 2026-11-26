@@ -7,8 +7,9 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from dataclasses import asdict
+
 from .game import (
-    ChatMessage,
     InMemoryGame,
     InspectBagUseCase,
     InspectItemUseCase,
@@ -16,6 +17,8 @@ from .game import (
     ItemNotFound,
     KatacombsError,
     ListPlayersUseCase,
+    LeaderboardUseCase,
+    LegacyPickupUseCase,
     LoginUseCase,
     LookAroundUseCase,
     LookInDirectionUseCase,
@@ -23,11 +26,12 @@ from .game import (
     NotAllowed,
     PlayerNotFound,
     QuitGameUseCase,
+    ReadMessagesUseCase,
     RegisterAccountUseCase,
     RegisterPlayerUseCase,
     SaveGameUseCase,
+    SendMessageUseCase,
     UseItemUseCase,
-    now_iso,
 )
 from .kata import Action, Bag, Direction, Item, Location, Player
 
@@ -121,7 +125,7 @@ def create_app(game: InMemoryGame | None = None) -> FastAPI:
         return error(400, "INVALID REQUEST.")
 
     def with_energy(player: Player) -> dict:
-        return {**player_json(player), "energy": game.players[player.sid].energy}
+        return {**player_json(player), "energy": player.bag.energy}
 
     @app.post("/game/player", status_code=201, tags=["Game"])
     def start_game(body: NewPlayer) -> dict:
@@ -138,7 +142,7 @@ def create_app(game: InMemoryGame | None = None) -> FastAPI:
 
     @app.get("/leaderboard", tags=["Game"])
     def leaderboard() -> list[dict]:
-        return sorted(game.finished_games, key=lambda entry: -entry["score"])
+        return [asdict(entry) for entry in LeaderboardUseCase(game).execute()]
 
     @app.get("/items/{itemSid}", tags=["Player"])
     def inspect_item(item_sid: ItemSid) -> dict:
@@ -146,8 +150,8 @@ def create_app(game: InMemoryGame | None = None) -> FastAPI:
 
     @app.get("/player/{playerSid}/bag", tags=["Player"])
     def inspect_bag(player_sid: PlayerSid) -> dict:
-        bag = bag_json(InspectBagUseCase(game).execute(player_sid))
-        return {**bag, "energy": game.players[player_sid].energy}
+        bag = InspectBagUseCase(game).execute(player_sid)
+        return {**bag_json(bag), "energy": bag.energy}
 
     @app.post("/player/{playerSid}/save", tags=["Player"])
     def save_game(player_sid: PlayerSid) -> dict:
@@ -165,21 +169,11 @@ def create_app(game: InMemoryGame | None = None) -> FastAPI:
 
     @app.post("/player/{playerSid}/chat", status_code=201, tags=["Chat"])
     def send_message(player_sid: PlayerSid, body: NewMessage) -> dict:
-        state = game.player(player_sid)
-        game.chat.append(
-            ChatMessage(location=state.location, name=state.name, text=body.text, at=now_iso())
-        )
-        state.moves += 1
-        return {"message": "SENT."}
+        return {"message": SendMessageUseCase(game).execute(player_sid, body.text)}
 
     @app.get("/player/{playerSid}/chat", tags=["Chat"])
     def read_messages(player_sid: PlayerSid) -> list[dict]:
-        state = game.player(player_sid)
-        return [
-            {"name": message.name, "text": message.text, "at": message.at}
-            for message in game.chat
-            if message.location == state.location
-        ]
+        return [asdict(message) for message in ReadMessagesUseCase(game).execute(player_sid)]
 
     @app.put("/player/{playerSid}/item/{itemSid}/use/{action}", tags=["Player"])
     def use_item(player_sid: PlayerSid, item_sid: ItemSid, action: Action) -> dict:
@@ -188,13 +182,7 @@ def create_app(game: InMemoryGame | None = None) -> FastAPI:
     # Mobile client v1 still calls this route. Do not remove it.
     @app.put("/player/{playerSid}/pickup/{itemSid}", tags=["Legacy"])
     def pickup(player_sid: PlayerSid, item_sid: ItemSid) -> dict:
-        state = game.player(player_sid)
-        game.item(item_sid)
-        here = game.places[state.location]
-        if item_sid in here.items:
-            here.items.remove(item_sid)
-            state.bag.append(item_sid)
-        return {"message": "OK"}
+        return {"message": LegacyPickupUseCase(game).execute(player_sid, item_sid)}
 
     @app.get("/player/{playerSid}/location", tags=["Player"])
     def look_around(player_sid: PlayerSid) -> dict:
@@ -208,10 +196,6 @@ def create_app(game: InMemoryGame | None = None) -> FastAPI:
 
     @app.put("/player/{playerSid}/move/{direction}", tags=["Player"])
     def move(player_sid: PlayerSid, direction: Direction) -> dict:
-        state = game.players.get(player_sid)
-        # Added for the mobile release: a tired player cannot move.
-        if state is not None and state.energy <= 0:
-            return error(405, "YOU ARE TOO TIRED TO MOVE. EAT OR DRINK SOMETHING.")
         return location_json(MoveUseCase(game).execute(player_sid, direction))
 
     return app

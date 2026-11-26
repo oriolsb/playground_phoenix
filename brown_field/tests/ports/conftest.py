@@ -8,12 +8,17 @@ other; the map lists them as a port tier that holds only while the seam is
 kept (see the decision records).
 """
 
+import json
+import random
 import re
+from datetime import datetime
 
 import pytest
 from pytest_bdd import given, parsers, then, when
 
 from brown_field import game as legacy
+from brown_field.adapters.memory import MemoryHighScores, MemoryStore
+from brown_field.core.world import WORLD_FILE
 from brown_field.kata import Action, Direction
 
 VERBS = {"takes": Action.PICK, "drops": Action.DROP, "opens": Action.OPEN, "closes": Action.CLOSE, "uses": Action.USE}
@@ -58,6 +63,71 @@ def ports() -> Ports:
 @given("a game behind the ports", target_fixture="ports")
 def a_game_behind_the_ports():
     return Ports()
+
+
+@given("the game behind the ports runs on in-memory stores")
+def on_memory_stores(ports):
+    ports.store, ports.sink = MemoryStore(), MemoryHighScores()
+    ports.game = legacy.InMemoryGame(saves=ports.store, accounts=ports.store, highscores=ports.sink)
+
+
+@when("a new game starts on the same stores")
+def a_new_game_on_the_same_stores(ports):
+    ports.game = legacy.InMemoryGame(saves=ports.store, accounts=ports.store, highscores=ports.sink)
+
+
+@given(parsers.parse("the game behind the ports runs on a clock fixed at minute {minute:d}"))
+def on_a_fixed_clock(ports, minute):
+    ports.game = legacy.InMemoryGame(clock=lambda: datetime(2026, 11, 26, 12, minute))
+
+
+class AlwaysZero:
+    """A random source whose chance is always 0; the sids still come from the stdlib."""
+
+    def random(self) -> float:
+        return 0.0
+
+    def choice(self, seq):
+        return seq[0]
+
+    def randint(self, a: int, b: int) -> int:
+        return random.randint(a, b)
+
+
+@given("the game behind the ports runs on a random source that always answers 0")
+def on_a_zero_random_source(ports):
+    ports.game = legacy.InMemoryGame(rng=AlwaysZero())
+
+
+@given("the game behind the ports runs on the world file with a pantry up from BRICK LANE")
+def on_a_world_with_a_pantry(ports):
+    world = json.loads(WORLD_FILE.read_text(encoding="utf-8"))
+    apple = "000100-000000000000-00000099"
+    next(l for l in world["locations"] if l["title"] == "BRICK LANE")["exits"]["up"] = "PANTRY"
+    world["locations"].append(
+        {"title": "PANTRY", "description": "A SMALL PANTRY.", "exits": {"down": "BRICK LANE"}, "items": [apple], "gold": 0, "isExit": False}
+    )
+    world["items"].append(
+        {"sid": apple, "name": "APPLE", "description": "A RED APPLE.", "actions": ["pick", "drop", "use"], "value": 0,
+         "use": {"energy": 2, "message": "YOU EAT THE APPLE."}}
+    )
+    ports.game = legacy.InMemoryGame(world=world)
+
+
+@when("a game starts behind the ports on the world file where BRICK LANE goes up to KATACOMBS EXIT")
+def on_a_world_without_a_way_back(ports):
+    world = json.loads(WORLD_FILE.read_text(encoding="utf-8"))
+    next(l for l in world["locations"] if l["title"] == "BRICK LANE")["exits"]["up"] = "KATACOMBS EXIT"
+    try:
+        legacy.InMemoryGame(world=world)
+    except ValueError as error:
+        ports.error = error
+
+
+@then(parsers.parse('the start is refused with "{message}"'))
+def the_start_is_refused(ports, message):
+    assert isinstance(ports.error, ValueError), ports.error
+    assert str(ports.error) == message
 
 
 @when("a new game starts behind the ports")
@@ -157,6 +227,36 @@ def the_port_saves(ports):
     ports.call(legacy.SaveGameUseCase, ports.sid())
 
 
+# --- Chat, leaderboard, legacy pickup ------------------------------------------------
+
+
+@when(parsers.parse('the port sends the chat message "{text}"'))
+def the_port_sends(ports, text):
+    ports.call(legacy.SendMessageUseCase, ports.sid(), text)
+
+
+@when(parsers.parse('the player "{name}" moves {direction} through the port'))
+def the_player_moves(ports, name, direction):
+    ports.call(legacy.MoveUseCase, ports.players[name], Direction(direction))
+    assert ports.error is None, ports.error
+
+
+@when(parsers.parse('the player "{name}" reads the chat through the port'))
+def the_player_reads(ports, name):
+    ports.call(legacy.ReadMessagesUseCase, ports.players[name])
+
+
+@when("the port shows the leaderboard")
+def the_port_shows_the_leaderboard(ports):
+    ports.call(legacy.LeaderboardUseCase)
+
+
+@when(parsers.parse('the port picks up the item "{name}" of "{title}" the legacy way'))
+def the_port_picks_up(ports, name, title):
+    sid = next(sid for sid in ports.game.places[title].items if ports.game.items[sid].name == name)
+    ports.call(legacy.LegacyPickupUseCase, ports.sid(), sid)
+
+
 # --- Accounts -------------------------------------------------------------------------
 
 
@@ -245,6 +345,45 @@ def the_bag_through_the_port(ports, gold, score):
 def the_bag_through_the_port_holds(ports, items):
     held = sorted(item.name for item in legacy.InspectBagUseCase(ports.game).execute(ports.sid()).items)
     assert held == sorted(n.strip() for n in items.split(",") if n.strip())
+
+
+@then(parsers.parse("the port answers a player with energy {energy:d}"))
+def the_port_answers_a_player_with_energy(ports, energy):
+    assert ports.error is None, ports.error
+    assert ports.result.bag.energy == energy
+
+
+@then(parsers.parse("the bag through the port shows energy {energy:d}"))
+def the_bag_shows_energy(ports, energy):
+    assert legacy.InspectBagUseCase(ports.game).execute(ports.sid()).energy == energy
+
+
+@then(parsers.re(r'the port answers the chat messages "(?P<messages>[^"]*)"'))
+def the_port_answers_the_chat(ports, messages):
+    assert ports.error is None, ports.error
+    assert [f"{m.name}: {m.text}" for m in ports.result] == [m.strip() for m in messages.split(",") if m.strip()]
+
+
+@then(parsers.parse('the port answers the finished games "{games}"'))
+def the_port_answers_the_finished_games(ports, games):
+    assert ports.error is None, ports.error
+    assert [f"{g.name} {g.score}" for g in ports.result] == [g.strip() for g in games.split(",")]
+
+
+@then(parsers.parse('the high-score sink holds "{name}"'))
+def the_sink_holds(ports, name):
+    assert [line[0] for line in ports.sink.lines] == [name]
+
+
+@then("no file is written")
+def no_file_is_written(isolated_files):
+    assert not isolated_files.db.exists() and not isolated_files.highscores.exists()
+
+
+@then(parsers.parse('the location through the port ends with "{text}"'))
+def the_location_ends_with(ports, text):
+    assert ports.error is None, ports.error
+    assert ports.result.description.endswith(text)
 
 
 @then("the port answers the path of the database file")

@@ -33,6 +33,7 @@ class Item:
 class Bag:
     items: list[Item] = field(default_factory=list)
     gold: int = 0
+    energy: int = 0
 
     @property
     def score(self) -> int:
@@ -55,6 +56,20 @@ class Player:
     location: Location
     bag: Bag
     has_won: bool = False
+
+
+@dataclass
+class ChatMessage:
+    name: str
+    text: str
+    at: str
+
+
+@dataclass
+class FinishedGame:
+    name: str
+    score: int
+    moves: int
 
 
 class RegisterPlayer(Protocol):
@@ -95,3 +110,19 @@ class Move(Protocol):
 
 class SaveGame(Protocol):
     def execute(self, player_sid: str) -> str: ...
+
+
+class SendMessage(Protocol):
+    def execute(self, player_sid: str, text: str) -> str: ...
+
+
+class ReadMessages(Protocol):
+    def execute(self, player_sid: str) -> list[ChatMessage]: ...
+
+
+class Leaderboard(Protocol):
+    def execute(self) -> list[FinishedGame]: ...
+
+
+class LegacyPickup(Protocol):
+    def execute(self, player_sid: str, item_sid: str) -> str: ...

@@ -8,6 +8,7 @@ consumer of this one.
 ```phoenix
 system: Katacombs
 spec: brown_field/spec/specification.md
+changes: brown_field/spec/changes
 decisions: brown_field/decisions
 decision_index: brown_field/decisions/adr-index.md
 map: brown_field/spec/evaluation/test-scenarios.md
@@ -27,4 +28,4 @@ reports: .phoenix/reports
 
 | Unit | Rules | Interface | Modules | Risk |
 | --- | --- | --- | --- | --- |
-| game-server | none yet | `create_app`, `app`, `InMemoryGame`, the `*UseCase` classes, `KatacombsError` and subclasses; REST routes under `/game`, `/player`, `/items`, `/accounts`, `/leaderboard` | `brown_field/game.py`, `brown_field/api.py`, `brown_field/kata.py` | high |
+| game-server | none yet | `create_app`, `app`, `InMemoryGame`, the 16 `*UseCase` classes, `KatacombsError` and subclasses (all in `brown_field.game`); REST routes under `/game`, `/player`, `/items`, `/accounts`, `/leaderboard` | `brown_field/game.py`, `brown_field/api.py`, `brown_field/kata.py`, `brown_field/core/`, `brown_field/adapters/` | high |
