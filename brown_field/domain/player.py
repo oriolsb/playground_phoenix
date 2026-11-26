@@ -28,6 +28,14 @@ class PlayerState:
     opened: set[str] = field(default_factory=set)
     has_won: bool = False
 
+    def ensure_rested(self) -> None:
+        """MOVE-5: a player with no energy can't move (decision 0011, the port, at 0).
+
+        Added for the mobile release. It comes before every other move check.
+        """
+        if self.energy <= 0:
+            raise NotAllowed("YOU ARE TOO TIRED TO MOVE. EAT OR DRINK SOMETHING.")
+
     def ensure_playing(self) -> None:
         """MOVE-7, ACT-3: after a win, a player can't move or act on items."""
         if self.has_won:

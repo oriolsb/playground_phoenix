@@ -2,8 +2,7 @@
 
 The adapter receives the ports (decision 0019) and imports only `kata.py`.
 Each route parses the request, calls the ports it needs, and maps the result
-or the error. The energy gate of MOVE-5 stays here, reading the energy
-through `InspectBag`, while decision 0011 is proposed.
+or the error. The energy gate of MOVE-5 lives in the move port (decision 0011).
 """
 
 from typing import Annotated
@@ -192,12 +191,6 @@ def build_app(ports: InboundPorts) -> FastAPI:
 
     @app.put("/player/{playerSid}/move/{direction}", tags=["Player"])
     def move(player_sid: PlayerSid, direction: Direction) -> dict:
-        # Added for the mobile release: a tired player cannot move. It stays in
-        # the route while decision 0011 is proposed, and reads the energy
-        # through a port. An unknown player gets the same 404 as from Move.
-        bag = ports.inspect_bag.execute(player_sid)
-        if bag.energy <= 0:
-            return error(405, "YOU ARE TOO TIRED TO MOVE. EAT OR DRINK SOMETHING.")
         return location_json(ports.move.execute(player_sid, direction))
 
     return app
