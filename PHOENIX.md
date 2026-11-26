@@ -8,6 +8,7 @@ consumer of this one.
 ```phoenix
 system: Katacombs
 spec: brown_field/spec/specification.md
+changes: brown_field/spec/changes
 decisions: brown_field/decisions
 decision_index: brown_field/decisions/adr-index.md
 map: brown_field/spec/evaluation/test-scenarios.md

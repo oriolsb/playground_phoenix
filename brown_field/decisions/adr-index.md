@@ -20,3 +20,4 @@ each one keeps its open question on its rule.
 | [0009](0009-the-slide-from-the-cellar-goes-one-way.md) | The slide from the cellar goes one way | written after the code | `WORLD-2`, `WORLD-1`, `WEB-E2E-1` | None |
 | [0010](0010-the-evaluation-is-checked-by-breaking-the-code.md) | The Evaluation is checked by breaking the code, by invariants and by recorded answers | accepted | `MOVE-8`, `MOVE-6`, `ACCOUNT-2`, `ACCOUNT-4`, `SAVE-2`, `BAG-2`, `BAG-3`, `API-2` | None |
 | [0011](0011-where-the-energy-gate-lives.md) | Where the energy gate lives, and at which energy it closes | proposed | `MOVE-5`, `WEB-MOVE-2`, `MOVE-2`, `ACT-15` | None |
+| [0012](0012-the-rules-live-behind-the-ports.md) | The rules live behind the ports, the rest is adapters | proposed | `ENTRY-3`, `ENTRY-4`, `ENTRY-5`, `ENTRY-6`, `ENTRY-7`, `WORLD-3`, `MOVE-5`, `WORLD-1` | `modular-core` |
