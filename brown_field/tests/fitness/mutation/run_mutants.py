@@ -28,6 +28,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[4]
 G, A = "brown_field/game.py", "brown_field/api.py"
 HS = "brown_field/adapters/files/high_scores.py"
+DB = "brown_field/adapters/sqlite/stores.py"
 
 # (file, old text, new text, label). Each old text must occur exactly once.
 MUTANTS = [
@@ -45,7 +46,7 @@ MUTANTS = [
     (G, '"BEER": 3}', '"BEER": 4}', "beer energy 3 -> 4"),
     (G, "clock.now().minute >= 50", "clock.now().minute >= 51", "market closes at 51"),
     (G, "clock.now().minute >= 50", "clock.now().astimezone(timezone.utc).minute >= 50", "market reads UTC"),
-    (G, 'os.environ.get("KATACOMBS_DB", "katacombs.db")', 'os.environ.get("KATACOMBS_DB", "game.db")', "default database file name"),
+    (DB, 'os.environ.get("KATACOMBS_DB", "katacombs.db")', 'os.environ.get("KATACOMBS_DB", "game.db")', "default database file name"),
     (G, "hashlib.sha256(password", "hashlib.sha3_256(password", "password hash sha256 -> sha3"),
     (G, "                # The world changed under an old save.\n                continue", "                pass", "old save at an unknown location loads"),
     (G, 'f"{place.description} {note}".strip()', 'f"{place.description} {note}"', "description keeps a trailing space"),
@@ -67,7 +68,7 @@ MUTANTS = [
     (G, "if sid not in self.players and sid not in self.items:", "if True:", "sid collision check removed"),
     (G, "if (place.title, direction) in ONE_WAY:\n                continue", "if True:\n                continue", "world check disabled"),
     (G, "            if account.player_sid == player_sid:\n                return account", "            if account.player_sid:\n                return account", "a quit finds the first account with a player"),
-    (G, "ORDER BY saved_at", "ORDER BY player_sid", "saves load in sid order"),
+    (DB, "ORDER BY saved_at", "ORDER BY player_sid", "saves load in sid order"),
     (A, '        state.moves += 1\n        return {"message": "SENT."}', '        return {"message": "SENT."}', "chat does not count a move"),
     (A, "if message.location == state.location", "if True", "chat shows every location"),
     (A, "if state is not None and state.energy <= 0:", "if state is not None and state.energy < 0:", "energy gate at -1"),
