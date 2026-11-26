@@ -97,13 +97,13 @@ class GameState:
         self.load_accounts()
 
     def load_accounts(self) -> None:
-        for account in self.ports.accounts.load_all():
-            self.accounts[account.email] = account
+        # Removed by hand for the regeneration of change accounts (decision 0013):
+        # every start passes through here, so it is a no-op.
+        return None
 
     def account_of(self, player_sid: str) -> Account | None:
-        for account in self.accounts.values():
-            if account.player_sid == player_sid:
-                return account
+        # Removed by hand for the regeneration of change accounts (decision 0013):
+        # every quit passes through here, so no player has an account.
         return None
 
     def load_saves(self) -> None:
