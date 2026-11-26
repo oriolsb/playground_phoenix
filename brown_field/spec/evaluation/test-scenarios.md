@@ -6,6 +6,12 @@ a regeneration: it says what the Evaluation proves, and what it does not.
 Mode: characterization. Every scenario records what the legacy code does
 today, and passes against it (2026-11-25).
 
+Open change `modular-core` (2026-11-26), normal mode: its five new
+scenarios fail before the code. They are the four of
+`fitness/architecture.feature` (`OPS-2`, `OPS-3`) and "The move port
+refuses a tired player" (`MOVE-5`, decision 0011). Every other scenario
+must pass, before the code changes and after.
+
 Command of the canonical run: `uv run pytest brown_field/tests`.
 
 Approved:
@@ -96,6 +102,8 @@ Do not type this line by hand. After the review, a person runs
 | ENTRY-1 | Two servers made from one game share its players (+1 more) | - | durable | `boundary/startup.feature` |
 | ENTRY-2 | The module brown_field.api holds a ready server (+1 more) | - | durable | `boundary/startup.feature` |
 | OPS-1 | A mix of 100 commands responds in less than 100 ms at p99 | api | live (simulated) | `fitness/ops.feature` |
+| OPS-2 | The core defines every use case of the port tier (+1 more) | - | durable | `fitness/architecture.feature` |
+| OPS-3 | The REST adapter reads no game state (+1 more) | - | durable | `fitness/architecture.feature` |
 | LEGACY-1 | A bag of 8 slots, 3 items with the same name per slot, refuses a ninth slot (+1 more) | api | durable | `rest/items.feature`, `rest/legacy.feature` |
 | LEGACY-2 | The legacy pickup of an item elsewhere answers OK and changes nothing | api | durable | `rest/legacy.feature` |
 
@@ -113,6 +121,7 @@ a decision record that traces to it.
 | Fitness | What it checks | How to run it |
 | --- | --- | --- |
 | `fitness/test_spec_status.py` | Each rule has one status; accepted cites its record; contested asks its question; the banners count right | `uv run pytest brown_field/tests -m fitness` |
+| `fitness/architecture.feature` (decision 0012) | `OPS-2`: the 12 use cases of the port tier are defined in `brown_field/core/`, and no core module imports `sqlite3`, `os`, `random`, `hashlib`, `json` or a web framework, or calls `open()` or `.now()`. `OPS-3`: `api.py` reads no `game.<attribute>`, and each of its 16 routes calls a use case | `uv run pytest brown_field/tests -m architecture` |
 | `fitness/test_invariants.py` (decision 0010) | After any random sequence of commands through the API: no item in two places, score = gold + values, energy 0 to 20, at most 8 slots and 20 players, gold never lower, a win never undone, every answer in the contract | `uv run pytest -k invariants`; longer with `KATACOMBS_EXAMPLES=2000` |
 | `fitness/test_transcripts.py` (decision 0010) | 7 sessions that the legacy code answered (6 random, 1 scripted, 1,896 lines with the files) give the same answers and files | `uv run pytest -k transcripts`; record again only with `golden/make_transcripts.py`, from the code of a decision |
 | `fitness/mutation/run_mutants.py` (decision 0010) | 42 hand-written mutants of the legacy code, one at a time, in a copy: each is killed, or listed in `mutation/mutants.md` with its reason. Also `uv run mutmut run`: 1,084 generated mutants, each survivor grouped by reason in the same file | `uv run python brown_field/tests/fitness/mutation/run_mutants.py` (about 10 minutes); `uv run mutmut run --max-children 8` (about 3 minutes) |
@@ -154,7 +163,6 @@ one records today's behavior; a decision record must confirm or change it.
 | `rest/save.feature`: A restart puts a saved item back in its location too | SAVE-2 |
 | `rest/save.feature`: A save from before 2023 stops the server from starting | SAVE-2 |
 | `rest/save.feature`: the save answer holds the server's file path | SAVE-1 |
-| `ports/ports.feature`: The move port has no energy gate | MOVE-5 |
 
 ## Rules with a partial check
 
