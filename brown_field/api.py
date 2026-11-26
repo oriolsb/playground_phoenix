@@ -1,4 +1,8 @@
-"""REST API for Katacombs."""
+"""The REST API for Katacombs: the driving adapter.
+
+Each route parses the request, calls the use cases, and turns the answer into
+JSON. It holds no game rule and reads no game state (OPS-3, decision 0012).
+"""
 
 from typing import Annotated
 
@@ -8,7 +12,6 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from .game import (
-    ChatMessage,
     InMemoryGame,
     InspectBagUseCase,
     InspectItemUseCase,
@@ -21,13 +24,17 @@ from .game import (
     LookInDirectionUseCase,
     MoveUseCase,
     NotAllowed,
+    PickUpUseCase,
     PlayerNotFound,
     QuitGameUseCase,
+    ReadMessagesUseCase,
     RegisterAccountUseCase,
     RegisterPlayerUseCase,
     SaveGameUseCase,
+    SendMessageUseCase,
+    ShowLeaderboardUseCase,
     UseItemUseCase,
-    now_iso,
+    ViewPlayerUseCase,
 )
 from .kata import Action, Bag, Direction, Item, Location, Player
 
@@ -89,6 +96,7 @@ def player_json(player: Player) -> dict:
         "location": location_json(player.location),
         "bag": bag_json(player.bag),
         "hasWon": player.has_won,
+        "energy": player.energy,
     }
 
 
@@ -120,16 +128,13 @@ def create_app(game: InMemoryGame | None = None) -> FastAPI:
     def invalid_request(request: Request, exc: RequestValidationError) -> JSONResponse:
         return error(400, "INVALID REQUEST.")
 
-    def with_energy(player: Player) -> dict:
-        return {**player_json(player), "energy": game.players[player.sid].energy}
-
     @app.post("/game/player", status_code=201, tags=["Game"])
     def start_game(body: NewPlayer) -> dict:
-        return with_energy(RegisterPlayerUseCase(game).execute(body.name))
+        return player_json(RegisterPlayerUseCase(game).execute(body.name))
 
     @app.get("/game/player", tags=["Game"])
     def list_players() -> list[dict]:
-        return [with_energy(player) for player in ListPlayersUseCase(game).execute()]
+        return [player_json(player) for player in ListPlayersUseCase(game).execute()]
 
     @app.delete("/game/player/{playerSid}", tags=["Game"])
     def quit_game(player_sid: PlayerSid) -> dict:
@@ -138,7 +143,10 @@ def create_app(game: InMemoryGame | None = None) -> FastAPI:
 
     @app.get("/leaderboard", tags=["Game"])
     def leaderboard() -> list[dict]:
-        return sorted(game.finished_games, key=lambda entry: -entry["score"])
+        return [
+            {"name": entry.name, "score": entry.score, "moves": entry.moves}
+            for entry in ShowLeaderboardUseCase(game).execute()
+        ]
 
     @app.get("/items/{itemSid}", tags=["Player"])
     def inspect_item(item_sid: ItemSid) -> dict:
@@ -147,7 +155,7 @@ def create_app(game: InMemoryGame | None = None) -> FastAPI:
     @app.get("/player/{playerSid}/bag", tags=["Player"])
     def inspect_bag(player_sid: PlayerSid) -> dict:
         bag = bag_json(InspectBagUseCase(game).execute(player_sid))
-        return {**bag, "energy": game.players[player_sid].energy}
+        return {**bag, "energy": ViewPlayerUseCase(game).execute(player_sid).energy}
 
     @app.post("/player/{playerSid}/save", tags=["Player"])
     def save_game(player_sid: PlayerSid) -> dict:
@@ -161,24 +169,18 @@ def create_app(game: InMemoryGame | None = None) -> FastAPI:
 
     @app.post("/accounts/login", tags=["Accounts"])
     def login(body: Credentials) -> dict:
-        return with_energy(LoginUseCase(game).execute(body.email, body.password))
+        return player_json(LoginUseCase(game).execute(body.email, body.password))
 
     @app.post("/player/{playerSid}/chat", status_code=201, tags=["Chat"])
     def send_message(player_sid: PlayerSid, body: NewMessage) -> dict:
-        state = game.player(player_sid)
-        game.chat.append(
-            ChatMessage(location=state.location, name=state.name, text=body.text, at=now_iso())
-        )
-        state.moves += 1
+        SendMessageUseCase(game).execute(player_sid, body.text)
         return {"message": "SENT."}
 
     @app.get("/player/{playerSid}/chat", tags=["Chat"])
     def read_messages(player_sid: PlayerSid) -> list[dict]:
-        state = game.player(player_sid)
         return [
             {"name": message.name, "text": message.text, "at": message.at}
-            for message in game.chat
-            if message.location == state.location
+            for message in ReadMessagesUseCase(game).execute(player_sid)
         ]
 
     @app.put("/player/{playerSid}/item/{itemSid}/use/{action}", tags=["Player"])
@@ -188,13 +190,7 @@ def create_app(game: InMemoryGame | None = None) -> FastAPI:
     # Mobile client v1 still calls this route. Do not remove it.
     @app.put("/player/{playerSid}/pickup/{itemSid}", tags=["Legacy"])
     def pickup(player_sid: PlayerSid, item_sid: ItemSid) -> dict:
-        state = game.player(player_sid)
-        game.item(item_sid)
-        here = game.places[state.location]
-        if item_sid in here.items:
-            here.items.remove(item_sid)
-            state.bag.append(item_sid)
-        return {"message": "OK"}
+        return {"message": PickUpUseCase(game).execute(player_sid, item_sid)}
 
     @app.get("/player/{playerSid}/location", tags=["Player"])
     def look_around(player_sid: PlayerSid) -> dict:
@@ -208,10 +204,6 @@ def create_app(game: InMemoryGame | None = None) -> FastAPI:
 
     @app.put("/player/{playerSid}/move/{direction}", tags=["Player"])
     def move(player_sid: PlayerSid, direction: Direction) -> dict:
-        state = game.players.get(player_sid)
-        # Added for the mobile release: a tired player cannot move.
-        if state is not None and state.energy <= 0:
-            return error(405, "YOU ARE TOO TIRED TO MOVE. EAT OR DRINK SOMETHING.")
         return location_json(MoveUseCase(game).execute(player_sid, direction))
 
     return app
